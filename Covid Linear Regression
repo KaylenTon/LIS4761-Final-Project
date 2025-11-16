@@ -1,0 +1,47 @@
+# Load library
+library(ggplot2)
+
+# Read the dataset
+myDF <- read.csv("Florida_COVID19_10302020_ByCounty_CSV_Partial.csv",
+                 stringsAsFactors = T)
+
+# Check structure 
+str(myDF)
+summary(myDF)
+
+# Keep relevant variables
+myDF2 <- myDF[, c("COUNTYNAME",
+                  "NewPercPos",
+                  "MedianAge",
+                  "EverMon",
+                  "MonNow")]
+
+# Remove missing values
+myDF2 <- na.omit(myDF2)
+
+# Inspect updated data
+str(myDF2)
+summary(myDF2)
+
+# Scatterplot of New Percent Positive vs Median Age
+plot(myDF2$MedianAge, myDF2$NewPercPos,
+     xlab = "Median Age",
+     ylab = "New Percent Positive",
+     main = "New Percent Positive vs Median Age")
+
+# Linear regression model
+lm1 <- lm(NewPercPos ~ MedianAge + EverMon + MonNow, data = myDF2)
+
+# Model summary
+summary(lm1)
+
+# Simpler model
+lm2 <- lm(NewPercPos ~ MedianAge, data = myDF2)
+summary(lm2)
+
+# Fitted vs Observed plot
+plot(fitted(lm1), myDF2$NewPercPos,
+     xlab = "Fitted Values",
+     ylab = "Observed New Percent Positive",
+     main = "Fitted vs Observed")
+abline(0, 1)
