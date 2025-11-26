@@ -22,7 +22,7 @@ tweets1_dtm <- tidy_tweets1 %>%
 
 lda_out <- LDA(
   tweets1_dtm,
-  k = 4, 
+  k = 30, 
   method = "Gibbs",
   control = list(seed = 67)
 )
