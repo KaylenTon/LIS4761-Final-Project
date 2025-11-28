@@ -15,14 +15,14 @@ tidy_tweets1 <- tweets1 %>%
   unnest_tokens(word, clean_tweet) %>% 
   anti_join(stop_words) %>% 
   count(id, word) %>% 
-  filter(n > 100)
+  filter(n > 50)
 
 tweets1_dtm <- tidy_tweets1 %>% 
   cast_dtm(id, word, n)
 
 lda_out <- LDA(
   tweets1_dtm,
-  k = 30, 
+  k = 10, 
   method = "Gibbs",
   control = list(seed = 67)
 )
