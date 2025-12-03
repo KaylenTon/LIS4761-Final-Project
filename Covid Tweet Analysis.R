@@ -4,18 +4,30 @@ library(tidytext)
 library(topicmodels)
 library(ggplot2)
 
+more_stop_words <- tribble(
+  ~word, ~lexicon,
+  "covid19", "CUSTOM",
+  "coronavirus", "CUSTOM",
+  "virus", "CUSTOM",
+  "rt", "CUSTOM",
+  "covid", "CUSTOM",
+  "19", "CUSTOM",
+  "florida", "CUSTOM"
+)
+
+full_stop_words <- stop_words %>% 
+  bind_rows(more_stop_words)
+
 # Covid Tweet Data from April to June of 2020
 tweets1 <- read.csv("COVIDTweetsAprilToJune2020.csv") %>% 
+  filter(str_detect(place, "Florida|FL")) %>% 
   select(id, clean_tweet)
-
-tweets1RT <- read.csv("COVIDTweetsAprilToJune2020.csv") %>% 
-  select(id, retweet_count) # Will use inner_join() and use the retweet variable later.
 
 tidy_tweets1 <- tweets1 %>% 
   unnest_tokens(word, clean_tweet) %>% 
-  anti_join(stop_words) %>% 
+  anti_join(full_stop_words) %>% 
   count(id, word) %>% 
-  filter(n > 50)
+  filter(n > 10)
 
 tweets1_dtm <- tidy_tweets1 %>% 
   cast_dtm(id, word, n)
