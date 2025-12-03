@@ -1,0 +1,130 @@
+
+library(shiny)
+library(tidyverse)
+library(tidytext)
+library(lubridate)
+library(ggplot2)
+
+# load & combine tweets 
+tj_2020_AprJun <- read_csv("COVIDTweetsAprilToJune2020.csv")
+tj_2020_AugSep <- read_csv("COVIDTweetsAugustToSeptember2020.csv")
+tj_2021_AprJun <- read_csv("COVIDTweetsAprilToJune2021.csv")
+
+tweets <- bind_rows(tj_2020_AprJun, tj_2020_AugSep, tj_2021_AprJun) |>
+  mutate(
+    date  = as.Date(created_at, format = "%m/%d/%Y"),
+    month = floor_date(date, "month"),
+    sentiment_class = case_when(
+      pos > neg ~ "positive",
+      neg > pos ~ "negative",
+      TRUE      ~ "neutral"
+    )
+  )
+
+month_choices <- format(sort(unique(na.omit(tweets$month))), "%Y-%m")
+
+#UI
+ui <- fluidPage(
+  titlePanel("COVID Tweet Sentiment Explorer"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      checkboxGroupInput(
+        "months", "Months:",
+        choices  = month_choices,
+        selected = month_choices
+      ),
+      checkboxGroupInput(
+        "sent", "Sentiment:",
+        choices  = c("positive","neutral","negative"),
+        selected = c("positive","neutral","negative")
+      ),
+      sliderInput("min_n", "Min word count (Top Words):", 10, 200, 50, step = 10),
+      numericInput("topN", "Top words per class:", 12, min = 5, max = 25)
+    ),
+    
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Overview",
+                 plotOutput("overallPlot", height = 300),
+                 plotOutput("monthlyPlot", height = 320),
+                 plotOutput("volumePlot",  height = 260)
+        ),
+        tabPanel("Top Words",
+                 plotOutput("topWordsPlot", height = 520)
+        )
+      )
+    )
+  )
+)
+
+#Server
+server <- function(input, output) {
+  
+  # selected data based on sidebar controls
+  filtered <- reactive({
+    req(input$months, input$sent)
+    sel_months <- as.Date(paste0(input$months, "-01"))
+    tweets |>
+      filter(!is.na(month)) |>
+      filter(month %in% sel_months, sentiment_class %in% input$sent)
+  })
+  
+  # 1) overall sentiment distribution
+  output$overallPlot <- renderPlot({
+    df <- filtered() |>
+      count(sentiment_class)
+    ggplot(df, aes(x = sentiment_class, y = n, fill = sentiment_class)) +
+      geom_col() +
+      labs(title = "Overall Distribution of Tweet Sentiment",
+           x = "sentiment", y = "count") +
+      theme_minimal() +
+      theme(legend.position = "none")
+  })
+  
+  # 2) monthly sentiment distribution
+  output$monthlyPlot <- renderPlot({
+    df <- filtered() |>
+      count(month, sentiment_class)
+    ggplot(df, aes(x = month, y = n, fill = sentiment_class)) +
+      geom_col(position = "dodge") +
+      labs(title = "Monthly Sentiment Distribution",
+           x = "month", y = "count") +
+      scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") +
+      theme_minimal()
+  })
+  
+  # 3) monthly tweet volume
+  output$volumePlot <- renderPlot({
+    df <- filtered() |>
+      count(month)
+    ggplot(df, aes(month, n)) +
+      geom_line() +
+      labs(title = "Monthly Tweet Volume", x = "month", y = "tweets") +
+      scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") +
+      theme_minimal()
+  })
+  
+  # 4) top words in pos/neg/neutral (based on filters)
+  output$topWordsPlot <- renderPlot({
+    df <- filtered()
+    validate(need(nrow(df) > 0, "No tweets for the current selection."))
+    top_words <- df |>
+      unnest_tokens(word, clean_tweet) |>
+      anti_join(stop_words, by = "word") |>
+      count(sentiment_class, word, sort = TRUE) |>
+      filter(n >= input$min_n) |>
+      group_by(sentiment_class) |>
+      slice_max(n, n = input$topN, with_ties = FALSE) |>
+      mutate(word = fct_reorder(word, n))
+    
+    ggplot(top_words, aes(word, n, fill = sentiment_class)) +
+      geom_col(show.legend = FALSE) +
+      coord_flip() +
+      facet_wrap(~ sentiment_class, scales = "free_y") +
+      labs(title = "Top Words by Sentiment", x = NULL, y = "count") +
+      theme_minimal()
+  })
+}
+
+shinyApp(ui = ui, server = server)
