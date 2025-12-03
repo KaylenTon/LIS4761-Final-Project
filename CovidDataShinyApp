@@ -1,0 +1,88 @@
+library(readr)
+library(dplyr)
+library(shiny)
+library(ggplot2)
+
+fl <- read_csv("Florida_COVID19_10302020_ByCounty_CSV_Partial.csv",
+               show_col_types = FALSE)
+
+fl <- fl %>%
+  filter(!COUNTYNAME %in% c("A State")) %>%      
+  transmute(
+    county = COUNTYNAME,
+    NewPercPos,          
+    NewTested,
+    NewPos,
+    T_positive = T_positive,
+    T_negative = T_negative,
+    Deaths,
+    MedianAge,
+    EverMon,              
+    MonNow              
+  )
+
+
+num_choices <- c(
+  "New percent positive" = "NewPercPos",
+  "New tested"           = "NewTested",
+  "New positives"        = "NewPos",
+  "Total positives"      = "T_positive",
+  "Total negatives"      = "T_negative",
+  "Deaths"               = "Deaths",
+  "Median age"           = "MedianAge",
+  "Ever monitored"       = "EverMon",
+  "Monitored now"        = "MonNow"
+)
+
+ui <- fluidPage(
+  titlePanel("Florida COVID-19 by County (Oct 30, 2020 — partial)"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("xvar", "X-axis:",  choices = num_choices, selected = "T_positive"),
+      selectInput("yvar", "Y-axis:",  choices = num_choices, selected = "T_negative"),
+      selectInput("colvar","Color:",  choices = num_choices, selected = "MedianAge"),
+      selectInput("sizvar","Size:",   choices = num_choices, selected = "NewTested"),
+      checkboxInput("logx", "Log scale X", value = FALSE),
+      checkboxInput("logy", "Log scale Y", value = FALSE)
+    ),
+    mainPanel(
+      plotOutput("scatterPlot", height = "420px"),
+      br(),
+      h5("Data preview"),
+      tableOutput("peek")
+    )
+  )
+)
+
+server <- function(input, output, session){
+  
+
+  add_scales <- function(p){
+    if (isTRUE(input$logx)) p <- p + scale_x_logarithmic()
+    if (isTRUE(input$logy)) p <- p + scale_y_logarithmic()
+    p
+  }
+  
+  output$scatterPlot <- renderPlot({
+    ggplot(fl, aes_string(x = input$xvar,
+                          y = input$yvar,
+                          color = input$colvar,
+                          size  = input$sizvar)) +
+      geom_point(alpha = 0.8) +
+      scale_size_continuous(range = c(2,10), guide = "legend") +
+      labs(x = names(num_choices)[num_choices == input$xvar],
+           y = names(num_choices)[num_choices == input$yvar],
+           color = names(num_choices)[num_choices == input$colvar],
+           size  = names(num_choices)[num_choices == input$sizvar],
+           title = "County-level snapshot",
+           subtitle = "Hover legend to decode aesthetics") +
+      theme_minimal(base_size = 13) %>%
+      add_scales()
+  })
+  
+  output$peek <- renderTable({
+    head(fl, 10)
+  })
+}
+
+shinyApp(ui = ui, server = server)
