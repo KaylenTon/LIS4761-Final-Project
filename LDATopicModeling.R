@@ -121,7 +121,7 @@ thirty <- thirty %>%
 thirty <- thirty %>% 
   arrange(desc(beta)) %>% 
   group_by(topic) %>% 
-  slice_max(beta, n = 10) %>% 
+  slice_max(beta, n = 5) %>% 
   mutate(term2 = fct_reorder(term, beta))
 
 ggplot(thirty, aes(term2, beta, fill = as.factor(topic))) + geom_col(show.legend = F) + facet_wrap(~topic, scales = "free") + coord_flip()
@@ -149,7 +149,49 @@ fifteen <- fifteen %>%
 ggplot(fifteen, aes(term2, beta, fill = as.factor(topic))) + geom_col(show.legend = F) + facet_wrap(~topic, scales = "free") + coord_flip()
 
 
+# k = 15 ------------------------------------------------------------------
 
+fifteen <- LDA(
+  tweets1_dtm,
+  k = 15, 
+  method = "Gibbs",
+  control = list(seed = 67)
+)
+
+glimpse(fifteen)
+
+fifteen <- fifteen %>% 
+  tidy(matrix = "beta")
+
+fifteen <- fifteen %>% 
+  arrange(desc(beta)) %>% 
+  group_by(topic) %>% 
+  slice_max(beta, n = 10) %>% 
+  mutate(term2 = fct_reorder(term, beta))
+
+ggplot(fifteen, aes(term2, beta, fill = as.factor(topic))) + geom_col(show.legend = F) + facet_wrap(~topic, scales = "free") + coord_flip()
+
+# k = 10 ------------------------------------------------------------------
+
+ten <- LDA(
+  tweets1_dtm,
+  k = 12, 
+  method = "Gibbs",
+  control = list(seed = 67)
+)
+
+glimpse(ten)
+
+ten <- ten %>% 
+  tidy(matrix = "beta")
+
+ten <- ten %>% 
+  arrange(desc(beta)) %>% 
+  group_by(topic) %>% 
+  slice_max(beta, n = 8) %>% 
+  mutate(term2 = fct_reorder(term, beta))
+
+ggplot(ten, aes(term2, beta, fill = as.factor(topic))) + geom_col(show.legend = F) + facet_wrap(~topic, scales = "free") + coord_flip()
 
 
 
