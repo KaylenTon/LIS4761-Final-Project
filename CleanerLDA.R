@@ -134,7 +134,10 @@ full_stop_words <- stop_words %>%
   ggplot(lda2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free") +
-    coord_flip()
+    coord_flip() +
+    labs(title = "April - June 2020 Topics",
+         x = "Words",
+         y = "Beta")
 
 # April to June of 2021 ---------------------------------------------------
 
