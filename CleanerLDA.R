@@ -25,7 +25,8 @@ more_stop_words <- tribble(
   "millions", "CUSTOM",
   "thousandth", "CUSTOM",
   "fauci", "CUSTOM",
-  "amp", "CUSTOM"
+  "amp", "CUSTOM",
+  "port", "CUSTOM"
 )
 
 full_stop_words <- stop_words %>% 
@@ -83,7 +84,9 @@ full_stop_words <- stop_words %>%
                          "vaccin" = "vaccine",
                          "accounc" = "announce",
                          "countie" = "county",
-                         "populati" = "population")) %>% 
+                         "populati" = "population",
+                         "emerge" = "emergency",
+                         "announc" = "announce")) %>% 
     count(id, word) %>% 
     filter(n > 10)
   
@@ -93,7 +96,7 @@ full_stop_words <- stop_words %>%
   
   lda2020_k12 = LDA(
     dtm2020,
-    k = 12, 
+    k = 16, 
     method = "Gibbs",
     control = list(seed = 67)
   )
@@ -111,7 +114,7 @@ full_stop_words <- stop_words %>%
   
   ggplot(lda2020_k12, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
-    facet_wrap(~topic, scales = "free") + 
+    facet_wrap(~topic, scales = "free") +
     coord_flip()
 
 # April to June of 2021 ---------------------------------------------------
@@ -166,7 +169,9 @@ full_stop_words <- stop_words %>%
                          "vaccin" = "vaccine",
                          "accounc" = "announce",
                          "countie" = "county",
-                         "populati" = "population")) %>% 
+                         "populati" = "population",
+                         "emerge" = "emergency",
+                         "announc" = "announce")) %>% 
     count(id, word) %>% 
     filter(n > 2)
   
@@ -176,7 +181,7 @@ full_stop_words <- stop_words %>%
   
   lda2021_k12 = LDA(
     dtm2021,
-    k = 12, 
+    k = 10, 
     method = "Gibbs",
     control = list(seed = 67)
   )
@@ -197,3 +202,4 @@ full_stop_words <- stop_words %>%
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free") + 
     coord_flip()
+  
