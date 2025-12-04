@@ -3,6 +3,9 @@ library(tidyverse)
 library(tidytext)
 library(topicmodels)
 library(ggplot2)
+library(qdap)
+library(tm)
+library(SnowballC)
 
 more_stop_words <- tribble(
   ~word, ~lexicon,
@@ -14,7 +17,10 @@ more_stop_words <- tribble(
   "19", "CUSTOM",
   "florida", "CUSTOM",
   "coronaviru", "CUSTOM",
-  "http", "CUSTOM"
+  "http", "CUSTOM",
+  "covidnineteen", "CUSTOM",
+  "don’t", "CUSTOM",
+  "it’s", "CUSTOM"
 )
 
 full_stop_words <- stop_words %>% 
@@ -28,6 +34,20 @@ full_stop_words <- stop_words %>%
     filter(str_detect(place, "Florida|FL")) %>% 
     select(id, original_text)
   
+  # cleaning original tweets FROM SCRATCH
+  clean2020 <- original_2020 %>% 
+    mutate(original_text = as.character(original_text)) %>% 
+    mutate(original_text = replace_contraction(original_text)) %>% 
+    mutate(original_text = replace_number(original_text)) %>% 
+    mutate(original_text = str_remove_all(original_text, "https?://.*$")) %>% 
+    mutate(original_text = str_remove_all(original_text, "RT ")) %>% 
+    mutate(original_text = str_remove_all(original_text, "@\\w+")) %>% 
+    mutate(original_text = removePunctuation(original_text)) %>%
+    mutate(original_text = str_remove_all(original_text, "'")) %>% 
+    mutate(original_text = removeNumbers(original_text)) %>% 
+    unnest_tokens(word, original_text) %>% 
+    anti_join(full_stop_words)
+
   dictionary_2020 <- original_2020 %>% 
     select(original_text) %>% 
     unnest_tokens(word, original_text) %>% 
@@ -35,30 +55,36 @@ full_stop_words <- stop_words %>%
     distinct(word) %>% 
     pull(word)
   
-  cleaned_2020 <- data2020 %>% 
-    filter(str_detect(place, "Florida|FL")) %>% 
-    select(id, clean_tweet)
-  
-  stemCompete_2020 <- cleaned_2020 %>% 
-    unnest_tokens(word, clean_tweet) %>% 
-    anti_join(full_stop_words) %>%
+  stem2020 <- clean2020 %>% 
+    mutate(word = wordStem(word)) %>% 
     mutate(
       word = unlist(lapply(word, stemCompletion, dictionary = dictionary_2020))
-    ) %>% 
+    )
+  
+  words_2020 <- stem2020 %>% 
+    drop_na() %>% 
+    anti_join(full_stop_words) %>% 
+    mutate(word = recode(word,
+                         "viru" = "virus",
+                         "informat" = "information",
+                         "posit" = "positive",
+                         "mani" = "humanity",
+                         "commun" = "community",
+                         "preside" = "president", 
+                         "respons" = "response",
+                         "raise" = "fundraise",
+                         "busin" = "business",
+                         "hospita" = "hospital")) %>% 
     count(id, word) %>% 
     filter(n > 10)
-  
-  words_2020 <- stemCompete_2020 %>% 
-    drop_na() %>% 
-    anti_join(full_stop_words)
   
   # LDA Modeling
   dtm2020 <- words_2020 %>% 
     cast_dtm(id, word, n)
   
   lda2020_k15 = LDA(
-    tweets1_dtm,
-    k = 15, 
+    dtm2020,
+    k = 12, 
     method = "Gibbs",
     control = list(seed = 67)
   )
@@ -70,12 +96,13 @@ full_stop_words <- stop_words %>%
   
   lda2020_k15 <- lda2020_k15 %>% 
     arrange(desc(beta)) %>% 
-    group_by(topic) %>% 
-    slice_max(beta, n = 10) %>% 
+    group_by(topic) %>%
+    slice_max(beta, n = 8) %>% 
     mutate(term2 = fct_reorder(term, beta))
   
   ggplot(lda2020_k15, aes(term2, beta, fill = as.factor(topic))) + 
-    geom_col(show.legend = F) + facet_wrap(~topic, scales = "free") + 
+    geom_col(show.legend = F) + scale_y_continuous(breaks = seq(0, 1, by = 0.05)) + 
+    facet_wrap(~topic, scales = "free") + 
     coord_flip()
 
 # April to June of 2021 ---------------------------------------------------
