@@ -94,25 +94,44 @@ full_stop_words <- stop_words %>%
   dtm2020 <- words_2020 %>% 
     cast_dtm(id, word, n)
   
-  lda2020_k12 = LDA(
+  lda2020_k16 = LDA(
     dtm2020,
     k = 16, 
     method = "Gibbs",
     control = list(seed = 67)
   )
   
-  glimpse(lda2020_k12)
+  glimpse(lda2020_k16)
   
-  lda2020_k12 <- lda2020_k12 %>% 
+  lda2020_k16 <- lda2020_k16 %>% 
     tidy(matrix = "beta")
   
-  lda2020_k12 <- lda2020_k12 %>% 
+  lda2020_k16 <- lda2020_k16 %>% 
     arrange(desc(beta)) %>% 
     group_by(topic) %>%
     slice_max(beta, n = 8) %>% 
     mutate(term2 = fct_reorder(term, beta))
   
-  ggplot(lda2020_k12, aes(term2, beta, fill = as.factor(topic))) + 
+  # Twelve human-identified topics using k = 16
+  lda2020_k16 <- lda2020_k16 %>% 
+    filter(topic %in% 1:12) %>% 
+    mutate(
+      topic = as.character(topic),
+      topic = recode(topic,
+                          "1" = "American Healthcare",
+                          "2" = "Government Response",
+                          "3" = "Mortality & Global Severity",
+                          "4" = "Daily Repots on Covid Numbers",
+                          "5" = "Community Support",
+                          "6" = "Mask Usage",
+                          "7" = "Public Media Criticism",
+                          "8" = "Vaccine Advancement Progress",
+                          "9" = "Economic Crisis",
+                          "10" = "Trump's Stimulus Checks",
+                          "11" = "CDC Virus Information",
+                          "12" = "Quarantine"))
+  
+  ggplot(lda2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free") +
     coord_flip()
