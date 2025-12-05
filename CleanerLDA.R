@@ -133,7 +133,7 @@ full_stop_words <- stop_words %>%
   
   ggplot(lda2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
-    facet_wrap(~topic, scales = "free") +
+    facet_wrap(~topic, scales = "free_y") +
     coord_flip() +
     labs(title = "April - June 2020 Topics",
          x = "Words",
@@ -222,6 +222,11 @@ full_stop_words <- stop_words %>%
   
   ggplot(lda2021_k12, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
-    facet_wrap(~topic, scales = "free") + 
-    coord_flip()
+    facet_wrap(~topic, scales = "free_y") + 
+    coord_flip() +
+    labs(
+      title = "April - June 2021 Topics",
+      x = "Words",
+      y = "Beta"
+    )
   
