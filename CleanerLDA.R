@@ -138,10 +138,10 @@ full_stop_words <- stop_words %>%
                      "10" = "Trump and Stimulus Checks",
                      "11" = "CDC Virus Information",
                      "12" = "Quarantine",
-                     "13" = "",
-                     "14" = "",
-                     "15" = "",
-                     "16" = ""))
+                     "13" = "Global Situation",
+                     "14" = "Reopening the Workplace",
+                     "15" = "Reopening Impact",
+                     "16" = "Strain on Hospitals & Healthcare"))
   
   # Replot with 16 topic names
   ggplot(beta_2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
@@ -262,11 +262,11 @@ full_stop_words <- stop_words %>%
                      "3" = "Negative Effects of the Pandemic",
                      "4" = "Vaccine Transmission Messageing",
                      "5" = "Market & Economy",
-                     "6" = "",
-                     "7" = "",
-                     "8" = "",
-                     "9" = "",
-                     "10" = ""))
+                     "6" = "Vaccine & Public Health Measures",
+                     "7" = "Political Framing of Vaccines",
+                     "8" = "Vaccine Approval",
+                     "9" = "Health Reports",
+                     "10" = "State of Covid Vaccines in June"))
   
   # Replot with 10 topic names
   ggplot(beta_2021_k10, aes(term2, beta, fill = as.factor(topic))) + 
