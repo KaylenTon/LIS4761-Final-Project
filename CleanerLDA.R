@@ -103,41 +103,62 @@ full_stop_words <- stop_words %>%
   
   glimpse(lda2020_k16)
   
-  lda2020_k16 <- lda2020_k16 %>% 
+  beta_2020_k16 <- lda2020_k16 %>% 
     tidy(matrix = "beta")
   
-  lda2020_k16 <- lda2020_k16 %>% 
+  beta_2020_k16 <- beta_2020_k16 %>% 
     arrange(desc(beta)) %>% 
     group_by(topic) %>%
     slice_max(beta, n = 8) %>% 
     mutate(term2 = fct_reorder(term, beta))
   
-  # Twelve human-identified topics using k = 16
-  lda2020_k16 <- lda2020_k16 %>% 
-    filter(topic %in% 1:12) %>% 
-    mutate(
-      topic = as.character(topic),
-      topic = recode(topic,
-                          "1" = "American Healthcare",
-                          "2" = "Government Response",
-                          "3" = "Mortality & Global Severity",
-                          "4" = "Daily Repots on Covid Numbers",
-                          "5" = "Community Support",
-                          "6" = "Mask Usage",
-                          "7" = "Public Media Criticism",
-                          "8" = "Vaccine Advancement Progress",
-                          "9" = "Economic Crisis",
-                          "10" = "Trump's Stimulus Checks",
-                          "11" = "CDC Virus Information",
-                          "12" = "Quarantine"))
-  
-  ggplot(lda2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
+  ggplot(beta_2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free_y") +
     coord_flip() +
     labs(title = "April - June 2020 Topics",
          x = "Words",
          y = "Beta")
+  
+  # Labeling human-identified topics using k = 16
+  beta_2020_k16 <- beta_2020_k16 %>% 
+    filter(topic %in% 1:12) %>% 
+    mutate(
+      topic = as.character(topic),
+      topic = recode(topic,
+                     "1" = "American Healthcare",
+                     "2" = "Government Response",
+                     "3" = "Mortality & Global Severity",
+                     "4" = "Daily Reports on Covid Numbers",
+                     "5" = "Community Support",
+                     "6" = "Mask Usage",
+                     "7" = "Public Media Criticism",
+                     "8" = "Vaccine Advancement Progress",
+                     "9" = "Economic Crisis",
+                     "10" = "Trump and Stimulus Checks",
+                     "11" = "CDC Virus Information",
+                     "12" = "Quarantine",
+                     "13" = "",
+                     "14" = "",
+                     "15" = "",
+                     "16" = ""))
+  
+  # Replot with 16 topic names
+  ggplot(beta_2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
+    geom_col(show.legend = F) +
+    facet_wrap(~topic, scales = "free_y") +
+    coord_flip() +
+    labs(title = "April - June 2020 Topics",
+         x = "Words",
+         y = "Beta")
+  
+  gamma_2020_k16 <- lda2020_k16 %>% 
+    tidy(matrix = "gamma")
+  
+  gamma_2020_k16 %>% 
+    group_by(topic) %>% 
+    summarize(gamma_total = sum(gamma)) %>% 
+    arrange(desc(gamma_total))
 
 # April to June of 2021 ---------------------------------------------------
 
@@ -201,26 +222,26 @@ full_stop_words <- stop_words %>%
   dtm2021 <- words_2021 %>% 
     cast_dtm(id, word, n)
   
-  lda2021_k12 = LDA(
+  lda2021_k10 = LDA(
     dtm2021,
     k = 10, 
     method = "Gibbs",
     control = list(seed = 67)
   )
   
-  glimpse(lda2021_k12)
+  glimpse(lda2021_k10)
   
-  lda2021_k12 <- lda2021_k12 %>% 
+  beta_2021_k10 <- lda2021_k10 %>% 
     tidy(matrix = "beta")
   
-  lda2021_k12 <- lda2021_k12 %>% 
+  beta_2021_k10 <- beta_2021_k10 %>% 
     arrange(desc(beta)) %>% 
     group_by(topic) %>%
     filter(beta >= .0125) %>% 
     slice_max(beta, n = 8) %>% 
     mutate(term2 = fct_reorder(term, beta))
   
-  ggplot(lda2021_k12, aes(term2, beta, fill = as.factor(topic))) + 
+  ggplot(beta_2021_k10, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free_y") + 
     coord_flip() +
@@ -230,3 +251,38 @@ full_stop_words <- stop_words %>%
       y = "Beta"
     )
   
+  # Labeling human-identified topics using k = 10
+  beta_2021_k10 <- beta_2021_k10 %>% 
+    filter(topic %in% 1:12) %>% 
+    mutate(
+      topic = as.character(topic),
+      topic = recode(topic,
+                     "1" = "Vaccine Announcements & Expert Advice",
+                     "2" = "Vaccine Distribution & County-level Reporting",
+                     "3" = "Negative Effects of the Pandemic",
+                     "4" = "Vaccine Transmission Messageing",
+                     "5" = "Market & Economy",
+                     "6" = "",
+                     "7" = "",
+                     "8" = "",
+                     "9" = "",
+                     "10" = ""))
+  
+  # Replot with 10 topic names
+  ggplot(beta_2021_k10, aes(term2, beta, fill = as.factor(topic))) + 
+    geom_col(show.legend = F) +
+    facet_wrap(~topic, scales = "free_y") + 
+    coord_flip() +
+    labs(
+      title = "April - June 2021 Topics",
+      x = "Words",
+      y = "Beta"
+    )
+  
+  gamma_2021_k10 <- lda2021_k10 %>% 
+    tidy(matrix = "gamma")
+  
+  gamma_2021_k10 %>% 
+    group_by(topic) %>% 
+    summarize(gamma_total = sum(gamma)) %>% 
+    arrange(desc(gamma_total))
