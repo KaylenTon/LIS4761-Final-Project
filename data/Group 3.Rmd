@@ -22,7 +22,135 @@ In plain text, someone (maybe Jadyn) should introduce our topics, data, and rese
 Veronica, you can paste your R Shiny code here. Also type in plain text, explaining what you did a bit and found.
 
 ```{r}
+library(shiny)
+library(ggplot2)
+library(readr)
+library(dplyr)
 
+fl <- read_csv("Florida_COVID19_10302020_ByCounty_CSV_Partial.csv",
+               show_col_types = FALSE) |>
+  filter(COUNTYNAME != "A State") |>
+  transmute(
+    county = COUNTYNAME,
+    NewPercPos, NewTested, NewPos,
+    T_positive, T_negative, Deaths,
+    MedianAge, EverMon, MonNow
+  ) |>
+  na.omit()
+
+metric_choices <- c(
+  "New percent positive" = "NewPercPos",
+  "New tested"           = "NewTested",
+  "New positives"        = "NewPos",
+  "Total positives"      = "T_positive",
+  "Total negatives"      = "T_negative",
+  "Deaths"               = "Deaths",
+  "Median age"           = "MedianAge",
+  "Ever monitored"       = "EverMon",
+  "Monitored now"        = "MonNow"
+)
+
+label_for <- function(var) names(metric_choices)[metric_choices == var]
+
+ui <- fluidPage(
+  titlePanel("Florida COVID-19 by County — Explorer"),
+  sidebarLayout(
+    sidebarPanel(
+      #overview controls
+      selectInput("metric", "Metric:", choices = metric_choices, selected = "NewPercPos"),
+      sliderInput("topN", "Show top N counties:", min = 5, max = 25, value = 10, step = 1),
+      checkboxInput("logy", "Log scale (bar & dist)", FALSE),
+      tags$hr(),
+      #compare (scatter) controls
+      selectInput("xvar",     "X-axis:",   choices = metric_choices, selected = "MedianAge"),
+      selectInput("yvar",     "Y-axis:",   choices = metric_choices, selected = "NewPercPos"),
+      selectInput("sizevar",  "Point size:",  choices = metric_choices, selected = "NewTested"),
+      selectInput("colorvar", "Point color:", choices = metric_choices, selected = "MedianAge"),
+      checkboxInput("logx_sc", "Log X (scatter)", FALSE),
+      checkboxInput("logy_sc", "Log Y (scatter)", FALSE)
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Overview (Top Counties)",
+                 plotOutput("barTop", height = "360px")),
+        tabPanel("Distribution",
+                 plotOutput("distPlot", height = "360px")),
+        tabPanel("Compare (Scatter)",
+                 plotOutput("scatter", height = "420px")),
+        tabPanel("Table",
+                 tableOutput("tbl"))
+      )
+    )
+  )
+)
+
+server <- function(input, output){
+
+  output$barTop <- renderPlot({
+    df <- fl |>
+      arrange(desc(.data[[input$metric]])) |>
+      slice_head(n = input$topN) |>
+      mutate(county = reorder(county, .data[[input$metric]]))
+    
+    p <- ggplot(df, aes(x = county, y = .data[[input$metric]])) +
+      geom_col(fill = "#2c7fb8") +
+      coord_flip() +
+      labs(
+        title = paste0("Top ", input$topN, " counties by ", label_for(input$metric)),
+        x = NULL, y = label_for(input$metric)
+      ) +
+      theme_minimal(base_size = 13)
+    
+    if (input$logy) p <- p + scale_y_log10()
+    p
+  })
+  
+  output$distPlot <- renderPlot({
+    p <- ggplot(fl, aes(x = .data[[input$metric]])) +
+      geom_histogram(bins = 30, alpha = 0.7) +
+      geom_density(linewidth = 1) +
+      labs(
+        title = paste0("Distribution of ", label_for(input$metric)),
+        x = label_for(input$metric), y = "Count"
+      ) +
+      theme_minimal(base_size = 13)
+    
+    if (input$logy) p <- p + scale_y_log10()
+    p
+  })
+  
+  output$scatter <- renderPlot({
+    p <- ggplot(
+      fl,
+      aes(
+        x     = .data[[input$xvar]],
+        y     = .data[[input$yvar]],
+        size  = .data[[input$sizevar]],
+        color = .data[[input$colorvar]]
+      )
+    ) +
+      geom_point(alpha = 0.85) +
+      scale_size_continuous(range = c(2, 10)) +
+      labs(
+        title = "Compare two metrics by county",
+        x     = label_for(input$xvar),
+        y     = label_for(input$yvar),
+        size  = label_for(input$sizevar),
+        color = label_for(input$colorvar)
+      ) +
+      theme_minimal(base_size = 13)
+    
+    if (input$logx_sc) p <- p + scale_x_log10()
+    if (input$logy_sc) p <- p + scale_y_log10()
+    p
+  })
+  
+  output$tbl <- renderTable({
+    head(fl, 12)
+  })
+}
+
+shinyApp(ui = ui, server = server)
 ```
 
 ## Linear Regression
