@@ -315,16 +315,16 @@ full_stop_words <- stop_words %>%
     mutate(
       topic = as.character(topic),
       topic = recode(topic,
-                     "1" = "Vaccine Announcements & Expert Advice",
-                     "2" = "Vaccine Distribution & County-level Reporting",
+                     "1" = "Vaccines",
+                     "2" = "Vaccines",
                      "3" = "Negative Effects of the Pandemic",
-                     "4" = "Vaccine Transmission Messageing",
+                     "4" = "Vaccines",
                      "5" = "Market & Economy",
-                     "6" = "Vaccine & Public Health Measures",
-                     "7" = "Political Framing of Vaccines",
-                     "8" = "Vaccine Approval",
+                     "6" = "Vaccines",
+                     "7" = "Vaccines",
+                     "8" = "Vaccines",
                      "9" = "Health Reports",
-                     "10" = "State of Covid Vaccines in June"))
+                     "10" = "Vaccines"))
   
   gamma_2021_k10 <- gamma_2021_k10 %>% 
     group_by(topic) %>% 
@@ -338,8 +338,9 @@ full_stop_words <- stop_words %>%
     coord_polar("y", start=0) +
     theme_void() +
     labs(
-      title = "Most Popular Topic: State of Covid Vaccines in June",
+      title = "Most Popular Topic: Covid Vaccinations",
       subtitle = "April-June 2021",
       fill = "Topics"
     )
+  
   
