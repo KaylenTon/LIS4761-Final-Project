@@ -1,6 +1,6 @@
 ---
 title: "Group 3"
-author: "Kaylen, [ADD YOUR NAMES]"
+author: "Kaylen, Veronica Vaccaro [ADD YOUR NAMES]"
 date: "2025-12-03"
 output: html_document
 ---
@@ -19,7 +19,7 @@ In plain text, someone (maybe Jadyn) should introduce our topics, data, and rese
 
 ## Exploratory Analysis
 
-Veronica, you can paste your R Shiny code here. Also type in plain text, explaining what you did a bit and found.
+Shiny App
 
 ```{r}
 library(shiny)
