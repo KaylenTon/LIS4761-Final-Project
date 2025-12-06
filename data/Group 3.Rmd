@@ -180,8 +180,8 @@ library(skimr)
 library(lubridate)
 library(textstem)
 
-tweets_apr_jun <- read_csv("Covid-19 Twitter Dataset (Apr-Jun 2020.csv)")
-tweets_aug_sep <- read_csv("Covid-19 Twitter Dataset (Aug-Sep 2020.csv)")
+tweets_apr_jun <- read_csv("COVIDTweetsAprilToJune2020.csv")
+tweets_aug_sep <- read_csv("COVIDTweetsAprilToJune2021.csv")
 tweets <- bind_rows(tweets_apr_jun, tweets_aug_sep)
 
 # Convert created_at to date
