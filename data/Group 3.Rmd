@@ -444,7 +444,7 @@ Creating the 2020 LDA model:
   
   gamma_2020_k16 <- gamma_2020_k16 %>% 
     group_by(topic) %>% 
-    summarize(gamma_total = sum(gamma)) %>% 
+    summarize(gamma_total = sum(gamma)/16) %>% # ranking which topics had most prevalence throughout all documents
     arrange(desc(gamma_total))
   
   gamma_2020_k16
@@ -596,7 +596,7 @@ Creating the 2021 LDA model:
     mutate(
       topic = as.character(topic),
       topic = recode(topic,
-                     "1" = "Vaccines",
+                     "1" = "Vaccines", # Many topics were mainly about vaccines, so I decided to combine them.
                      "2" = "Vaccines",
                      "3" = "Negative Effects of the Pandemic",
                      "4" = "Vaccines",
@@ -609,7 +609,7 @@ Creating the 2021 LDA model:
   
   gamma_2021_k10 <- gamma_2021_k10 %>% 
     group_by(topic) %>% 
-    summarize(gamma_total = sum(gamma)) %>% 
+    summarize(gamma_total = sum(gamma)/10) %>% # ranking which topics had most prevalence throughout all documents
     arrange(desc(gamma_total))
   
   gamma_2021_k10
