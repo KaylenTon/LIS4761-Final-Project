@@ -22,29 +22,38 @@ library(ggplot2)
 library(qdap)
 library(tm)
 library(SnowballC)
+library(shiny)
+library(readr)
+library(dplyr)
 ```
 
 ## Exploratory Analysis
 
-Shiny App
+For this exploratory analysis, I used a Shiny app to visualoze COVID-19 data accross Florida Counties. I selected the most relevant variables such as cases, deaths, testing, monitoring, and median age. I also removed missing values to make sure there would be no erros. Through the usage of Shiny app, I was able to compare metrics interactively through bar charts, histograms, and scatter plots. I was able to find that larger urban counties had the highest total cases, but small rural counties had higher positivity rates, suggesting that county density and testing capacity play a role in detecting cases. Scatterplots comparing median age and deaths showed that older, more populous counties showed mortality. 
 
 ```{r}
-library(shiny)
-library(ggplot2)
-library(readr)
-library(dplyr)
 
-fl <- read_csv("Florida_COVID19_10302020_ByCounty_CSV_Partial.csv",
-               show_col_types = FALSE) |>
+fl <- read_csv(
+  "Florida_COVID19_10302020_ByCounty_CSV_Partial.csv",
+  show_col_types = FALSE
+) |>
   filter(COUNTYNAME != "A State") |>
   transmute(
-    county = COUNTYNAME,
-    NewPercPos, NewTested, NewPos,
-    T_positive, T_negative, Deaths,
-    MedianAge, EverMon, MonNow
+    county = COUNTYNAME,      # nicer name for UI
+    NewPercPos,               # new percent positive 
+    NewTested,                # count new tests
+    NewPos,                   # count new positives
+    T_positive,               # cumulative positives
+    T_negative,               # cumulative negatives
+    Deaths,                   # cumulative deaths
+    MedianAge,                # county median age
+    EverMon,                  # ever monitored
+    MonNow                    # monitored now
   ) |>
   na.omit()
 
+#Shared labels for UI controls 
+#Named vector: user-facing labels on the left, column names on the right.
 metric_choices <- c(
   "New percent positive" = "NewPercPos",
   "New tested"           = "NewTested",
@@ -57,83 +66,82 @@ metric_choices <- c(
   "Monitored now"        = "MonNow"
 )
 
+#Small helper to convert a selected column name back to its label
 label_for <- function(var) names(metric_choices)[metric_choices == var]
 
+#UI 
 ui <- fluidPage(
   titlePanel("Florida COVID-19 by County — Explorer"),
   sidebarLayout(
     sidebarPanel(
-      #overview controls
+      #Overview (bar + dist) controls
       selectInput("metric", "Metric:", choices = metric_choices, selected = "NewPercPos"),
       sliderInput("topN", "Show top N counties:", min = 5, max = 25, value = 10, step = 1),
-      checkboxInput("logy", "Log scale (bar & dist)", FALSE),
       tags$hr(),
-      #compare (scatter) controls
-      selectInput("xvar",     "X-axis:",   choices = metric_choices, selected = "MedianAge"),
-      selectInput("yvar",     "Y-axis:",   choices = metric_choices, selected = "NewPercPos"),
-      selectInput("sizevar",  "Point size:",  choices = metric_choices, selected = "NewTested"),
-      selectInput("colorvar", "Point color:", choices = metric_choices, selected = "MedianAge"),
-      checkboxInput("logx_sc", "Log X (scatter)", FALSE),
-      checkboxInput("logy_sc", "Log Y (scatter)", FALSE)
+      #Compare (scatter) controls
+      selectInput("xvar",     "X-axis:",     choices = metric_choices, selected = "MedianAge"),
+      selectInput("yvar",     "Y-axis:",     choices = metric_choices, selected = "NewPercPos"),
+      selectInput("sizevar",  "Point size:", choices = metric_choices, selected = "NewTested"),
+      selectInput("colorvar", "Point color:",choices = metric_choices, selected = "MedianAge")
     ),
     mainPanel(
       tabsetPanel(
-        tabPanel("Overview (Top Counties)",
-                 plotOutput("barTop", height = "360px")),
-        tabPanel("Distribution",
-                 plotOutput("distPlot", height = "360px")),
-        tabPanel("Compare (Scatter)",
-                 plotOutput("scatter", height = "420px")),
-        tabPanel("Table",
-                 tableOutput("tbl"))
+        tabPanel("Overview (Top Counties)", plotOutput("barTop", height = "360px")),
+        tabPanel("Distribution",            plotOutput("distPlot", height = "360px")),
+        tabPanel("Compare (Scatter)",       plotOutput("scatter", height = "420px")),
+        tabPanel("Table",                   tableOutput("tbl"))
       )
     )
   )
 )
 
+#Server
 server <- function(input, output){
-
+  
+  #Top-N bar chart of the selected metric
   output$barTop <- renderPlot({
+    #Rank counties by selected metric and keep the top N
     df <- fl |>
       arrange(desc(.data[[input$metric]])) |>
       slice_head(n = input$topN) |>
-      mutate(county = reorder(county, .data[[input$metric]]))
+      mutate(county = reorder(county, .data[[input$metric]]))  #order bars
     
     p <- ggplot(df, aes(x = county, y = .data[[input$metric]])) +
       geom_col(fill = "#2c7fb8") +
       coord_flip() +
       labs(
         title = paste0("Top ", input$topN, " counties by ", label_for(input$metric)),
-        x = NULL, y = label_for(input$metric)
+        x = NULL,
+        y = label_for(input$metric)
       ) +
       theme_minimal(base_size = 13)
     
-    if (input$logy) p <- p + scale_y_log10()
     p
   })
   
+  #Distribution (histogram + density) of the selected metric
   output$distPlot <- renderPlot({
     p <- ggplot(fl, aes(x = .data[[input$metric]])) +
-      geom_histogram(bins = 30, alpha = 0.7) +
-      geom_density(linewidth = 1) +
+      geom_histogram(bins = 30, alpha = 0.7) +     # histogram for frequency
+      geom_density(linewidth = 1) +                # smoothed shape overlay
       labs(
         title = paste0("Distribution of ", label_for(input$metric)),
-        x = label_for(input$metric), y = "Count"
+        x = label_for(input$metric),
+        y = "Count"
       ) +
       theme_minimal(base_size = 13)
-    
-    if (input$logy) p <- p + scale_y_log10()
     p
   })
   
+  #Scatter: compare any two metrics, with size/color encodings 
   output$scatter <- renderPlot({
     p <- ggplot(
       fl,
       aes(
         x     = .data[[input$xvar]],
         y     = .data[[input$yvar]],
-        size  = .data[[input$sizevar]],
-        color = .data[[input$colorvar]]
+        size  = .data[[input$sizevar]],   # third variable via point size
+        color = .data[[input$colorvar]]   # fourth variable via color
       )
     ) +
       geom_point(alpha = 0.85) +
@@ -146,17 +154,16 @@ server <- function(input, output){
         color = label_for(input$colorvar)
       ) +
       theme_minimal(base_size = 13)
-    
-    if (input$logx_sc) p <- p + scale_x_log10()
-    if (input$logy_sc) p <- p + scale_y_log10()
     p
   })
   
+  #Preview table
   output$tbl <- renderTable({
     head(fl, 12)
   })
 }
 
+#Run app 
 shinyApp(ui = ui, server = server)
 ```
 
