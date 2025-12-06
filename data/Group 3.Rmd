@@ -14,7 +14,14 @@ knitr::opts_chunk$set(echo = TRUE)
 In plain text, someone (maybe Jadyn) should introduce our topics, data, and research questions.
 
 ```{r}
-
+# EVERYONE LOAD YOUR LIBRARIES HERE. DO NOT DUPLICATE.
+library(tidyverse)
+library(tidytext)
+library(topicmodels)
+library(ggplot2)
+library(qdap)
+library(tm)
+library(SnowballC)
 ```
 
 ## Exploratory Analysis
@@ -259,14 +266,6 @@ Loading my libraries and creating custom stop words.
 
 ```{r}
 
-library(tidyverse)
-library(tidytext)
-library(topicmodels)
-library(ggplot2)
-library(qdap)
-library(tm)
-library(SnowballC)
-
 more_stop_words <- tribble(
   ~word, ~lexicon,
   "covid19", "CUSTOM",
@@ -324,6 +323,7 @@ April to June of 2020 - Preparing my data
     anti_join(full_stop_words) %>%
     distinct(word) %>% 
     pull(word)
+  # This dictionary will be used to stem-complete the words after I stem them.
   
   stem2020 <- clean2020 %>% 
     mutate(word = wordStem(word)) %>% 
@@ -331,6 +331,7 @@ April to June of 2020 - Preparing my data
       word = unlist(lapply(word, stemCompletion, dictionary = dictionary_2020))
     )
   
+  # The words did not 100% stem the way I had hoped, so I manually fixed some of them after searching/filtering through the original tweets to find the best match if needed. I repeat these same words for manual stem completion in the 2021 data processing (next) too. Still, stem completion saved a lot of time and cleaned up the data well.
   words_2020 <- stem2020 %>% 
     drop_na() %>% 
     anti_join(full_stop_words) %>% 
@@ -352,7 +353,7 @@ April to June of 2020 - Preparing my data
                          "emerge" = "emergency",
                          "announc" = "announce")) %>% 
     count(id, word) %>% 
-    filter(n > 10)
+    filter(n > 10) # There were a lot of words from this tweet dataset, so I filtered for only the words that appeared 10 or more times. In the 2021 data, this part is very different.
 
 ```
 
@@ -365,18 +366,18 @@ Creating the 2020 LDA model:
   
   lda2020_k16 = LDA(
     dtm2020,
-    k = 16, 
+    k = 16, # 16 was the most optimal, human-interpretable k value, according to me (Kaylen) and Jadyn, for this model.
     method = "Gibbs",
     control = list(seed = 67)
   )
   
   beta_2020_k16 <- lda2020_k16 %>% 
-    tidy(matrix = "beta")
+    tidy(matrix = "beta") # Beta to find out the words within a topic to analyze them.
   
   beta_2020_k16 <- beta_2020_k16 %>% 
     arrange(desc(beta)) %>% 
     group_by(topic) %>%
-    slice_max(beta, n = 8) %>% 
+    slice_max(beta, n = 8) %>% # 8 words at a time in a column chart, but if any beta values tie, they will both (or more) show, which is fine.
     mutate(term2 = fct_reorder(term, beta))
   
   ggplot(beta_2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
@@ -392,7 +393,7 @@ Creating the 2020 LDA model:
     filter(topic %in% 1:12) %>% 
     mutate(
       topic = as.character(topic),
-      topic = recode(topic,
+      topic = recode(topic, # After visualizing with the ggplot code above, Jadyn and I came up with these topics.
                      "1" = "American Healthcare",
                      "2" = "Government Response",
                      "3" = "Mortality & Global Severity",
@@ -413,14 +414,14 @@ Creating the 2020 LDA model:
   # Replot with 16 topic names
   ggplot(beta_2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
-    facet_wrap(~topic, scales = "free_y") +
+    facet_wrap(~topic, scales = "free_y") + # free_y scale so that the beta ticks change in the same increments across plots.
     coord_flip() +
     labs(title = "April - June 2020 Topics",
          x = "Words",
          y = "Beta")
   
   gamma_2020_k16 <- lda2020_k16 %>% 
-    tidy(matrix = "gamma") %>% 
+    tidy(matrix = "gamma") %>% # Gamma to find out which topics were most dominant.
     mutate(
       topic = as.character(topic),
       topic = recode(topic,
@@ -459,8 +460,14 @@ Creating the 2020 LDA model:
     )
 
 ```
+The most prominent topics that Floridians, likely like most people, talked about during April-June of 2020 are:
+1. **Daily Reports on Covid Numbers** - likely because cases keep stacking and it brews fear
+2. **Mortality & Global Severity** - a global pandemic was definitely a new experience for most people alive today. The coronavirus caused severe illness and many deaths. It was happening globally and hitting close to many people's homes and personal lives. 
+3. **Quarantine** - At this point in time, Florida had just begun reopening its counties, allowing public places such as retail stores and restuarants. 
 
-April to June of 2021 - Preparing my data
+
+I basically repeat most of the code I did for the 2020 data with the 2021 data.
+April to June of 2021 - Preparing my data:
 
 ```{r}
 
@@ -531,7 +538,7 @@ Creating the 2021 LDA model:
   
   lda2021_k10 = LDA(
     dtm2021,
-    k = 10, 
+    k = 10, # 10 was the most optimal, human-interpretable k value, according to me (Kaylen) and Jadyn, for this model
     method = "Gibbs",
     control = list(seed = 67)
   )
@@ -617,6 +624,7 @@ Creating the 2021 LDA model:
       fill = "Topics"
     )
 ```
+Though we set our k value to equal ten and ended up labeling ten topics, one thing I noticed about the 2021 tweet data was that the word "vaccine" dominated in several of the topics when observing beta values. It's clear that the conversation shifted to the topics of covid vaccinations in 2021. This contrasts the conversations around covid in 2020, where we were living in a time of __starting__ to return to normal routines after a strict quarantine, lived through reports of many cases, thinking the world changed forever. Conversations were more diverse around the main topic of Covid back then. In 2021, when vaccines were out and rolling, Governor Desantis vocally spoke about no vaccine mandates.
 
 ## Conclusion
 
