@@ -26,7 +26,15 @@ more_stop_words <- tribble(
   "thousandth", "CUSTOM",
   "fauci", "CUSTOM",
   "amp", "CUSTOM",
-  "port", "CUSTOM"
+  "port", "CUSTOM",
+  "due", "CUSTOM",
+  "stainless", "CUSTOM",
+  "include", "CUSTOM",
+  "video", "CUSTOM",
+  "dyannleroy", "CUTSOM",
+  "ten", "CUSTOM",
+  "million", "CUSTOM",
+  "di", "CUSTOM"
 )
 
 full_stop_words <- stop_words %>% 
@@ -94,25 +102,25 @@ full_stop_words <- stop_words %>%
   dtm2020 <- words_2020 %>% 
     cast_dtm(id, word, n)
   
-  lda2020_k16 = LDA(
+  lda2020_k9 = LDA(
     dtm2020,
-    k = 16, 
+    k = 9, 
     method = "Gibbs",
     control = list(seed = 67)
   )
   
-  glimpse(lda2020_k16)
+  glimpse(lda2020_k9)
   
-  beta_2020_k16 <- lda2020_k16 %>% 
+  beta_2020_k9 <- lda2020_k9 %>% 
     tidy(matrix = "beta")
   
-  beta_2020_k16 <- beta_2020_k16 %>% 
+  beta_2020_k9 <- beta_2020_k9 %>% 
     arrange(desc(beta)) %>% 
     group_by(topic) %>%
     slice_max(beta, n = 8) %>% 
     mutate(term2 = fct_reorder(term, beta))
   
-  ggplot(beta_2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
+  ggplot(beta_2020_k9, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free_y") +
     coord_flip() +
@@ -120,59 +128,44 @@ full_stop_words <- stop_words %>%
          x = "Words",
          y = "Beta")
   
-  # Labeling human-identified topics using k = 16
-  beta_2020_k16 <- beta_2020_k16 %>% 
-    filter(topic %in% 1:12) %>% 
+  # Labeling human-identified topics using k = 9
+  beta_2020_k9 <- beta_2020_k9 %>% 
     mutate(
       topic = as.character(topic),
       topic = recode(topic,
-                     "1" = "American Healthcare",
-                     "2" = "Government Response",
-                     "3" = "Mortality & Global Severity",
-                     "4" = "Daily Reports on Covid Numbers",
-                     "5" = "Community Support",
-                     "6" = "Mask Usage",
-                     "7" = "Public Media Criticism",
-                     "8" = "Vaccine Advancement Progress",
-                     "9" = "Economic Crisis",
-                     "10" = "Trump and Stimulus Checks",
-                     "11" = "CDC Virus Information",
-                     "12" = "Quarantine",
-                     "13" = "Global Situation",
-                     "14" = "Reopening the Workplace",
-                     "15" = "Reopening Impact",
-                     "16" = "Strain on Hospitals & Healthcare"))
+                     "1" = "Severity Reports",
+                     "2" = "Trump Response",
+                     "3" = "Public Health Reports",
+                     "4" = "Global Supplies",
+                     "5" = "Vaccine Development",
+                     "6" = "Early Reopening Effects",
+                     "7" = "Government Action",
+                     "8" = "Virus Exposure to Workers",
+                     "9" = "Closing of American Public Spaces"))
   
   # Re-plot w/ topic titles
-  ggplot(beta_2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
+  ggplot(beta_2020_k9, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free_y") +
     coord_flip() +
     labs(title = "April - June 2020 Topics",
          x = "Words",
-         y = "Beta")
+         y = "Beta") + theme_bw()
   
   # gamma to find most dominant/prevalent topic during 2020
-  gamma_2020_k16 <- lda2020_k16 %>% 
+  gamma_2020_k16 <- lda2020_k9 %>% 
     tidy(matrix = "gamma") %>% 
     mutate(
       topic = recode(topic,
-                     "1" = "American Healthcare",
-                     "2" = "Government Response",
-                     "3" = "Mortality & Global Severity",
-                     "4" = "Daily Reports on Covid Numbers",
-                     "5" = "Community Support",
-                     "6" = "Mask Usage",
-                     "7" = "Public Media Criticism",
-                     "8" = "Vaccine Advancement Progress",
-                     "9" = "Economic Crisis",
-                     "10" = "Trump and Stimulus Checks",
-                     "11" = "CDC Virus Information",
-                     "12" = "Quarantine",
-                     "13" = "Global Situation",
-                     "14" = "Reopening the Workplace",
-                     "15" = "Reopening Impact",
-                     "16" = "Strain on Hospitals & Healthcare"))
+                     "1" = "Severity Reports",
+                     "2" = "Trump Response",
+                     "3" = "Public Health Reports",
+                     "4" = "Global Supplies",
+                     "5" = "Vaccine Development",
+                     "6" = "Early Reopening Effects",
+                     "7" = "Government Action",
+                     "8" = "Virus Exposure to Workers",
+                     "9" = "Closing of American Public Spaces"))
   
   dominant_topic_2020 <- gamma_2020_k16 %>%
     group_by(document) %>%
@@ -193,7 +186,7 @@ full_stop_words <- stop_words %>%
       fill = "Themes",
       x = NULL,
       y = "Tweets"
-    )
+    ) + theme_bw()
   
 # April to June of 2021 ---------------------------------------------------
 
@@ -259,7 +252,7 @@ full_stop_words <- stop_words %>%
   
   lda2021_k10 = LDA(
     dtm2021,
-    k = 16, 
+    k = 10, 
     method = "Gibbs",
     control = list(seed = 67)
   )
@@ -272,7 +265,6 @@ full_stop_words <- stop_words %>%
   beta_2021_k10 <- beta_2021_k10 %>% 
     arrange(desc(beta)) %>% 
     group_by(topic) %>%
-    filter(beta >= .0125) %>% 
     slice_max(beta, n = 8) %>% 
     mutate(term2 = fct_reorder(term, beta))
   
