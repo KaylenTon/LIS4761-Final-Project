@@ -38,7 +38,8 @@ full_stop_words <- stop_words %>%
   
   original_2020 <- data2020 %>% 
     filter(str_detect(place, "Florida|FL")) %>% 
-    select(id, original_text)
+    select(id, original_text) %>% 
+    mutate(id = row_number())
   
   # cleaning 2020 original tweets FROM SCRATCH
   clean2020 <- original_2020 %>% 
@@ -87,8 +88,7 @@ full_stop_words <- stop_words %>%
                          "populati" = "population",
                          "emerge" = "emergency",
                          "announc" = "announce")) %>% 
-    count(id, word) %>% 
-    filter(n > 10)
+    count(id, word)
   
   # LDA Modeling
   dtm2020 <- words_2020 %>% 
@@ -143,7 +143,7 @@ full_stop_words <- stop_words %>%
                      "15" = "Reopening Impact",
                      "16" = "Strain on Hospitals & Healthcare"))
   
-  # Replot with 16 topic names
+  # Re-plot w/ topic titles
   ggplot(beta_2020_k16, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free_y") +
@@ -152,10 +152,10 @@ full_stop_words <- stop_words %>%
          x = "Words",
          y = "Beta")
   
+  # gamma to find most dominant/prevalent topic during 2020
   gamma_2020_k16 <- lda2020_k16 %>% 
     tidy(matrix = "gamma") %>% 
     mutate(
-      topic = as.character(topic),
       topic = recode(topic,
                      "1" = "American Healthcare",
                      "2" = "Government Response",
@@ -174,21 +174,25 @@ full_stop_words <- stop_words %>%
                      "15" = "Reopening Impact",
                      "16" = "Strain on Hospitals & Healthcare"))
   
-  gamma_2020_k16 <- gamma_2020_k16 %>% 
-    group_by(topic) %>% 
-    summarize(gamma_total = sum(gamma)) %>% 
-    arrange(desc(gamma_total))
+  dominant_topic_2020 <- gamma_2020_k16 %>%
+    group_by(document) %>%
+    slice_max(gamma, n = 1, with_ties = FALSE) %>%
+    ungroup()
   
-  gamma_2020_k16
+  topic_counts_2020 <- dominant_topic_2020 %>%
+    count(topic, sort = TRUE) %>% 
+    mutate(topic = reorder(topic, n))
   
-  ggplot(gamma_2020_k16, aes(x="", y=gamma_total, fill=topic)) +
+  ggplot(topic_counts_2020, aes(x = topic, y = n, fill = topic)) +
     geom_bar(stat = "identity", width = 1, color = "white") +
-    coord_polar("y", start=0) +
-    theme_void() +
+    geom_text(aes(label = n)) +
+    coord_flip() +
     labs(
-      title = "Most Popular Topic: Daily Reports On Covid Numbers",
-      subtitle = "April-June 2020",
-      fill = "Topics"
+      title = "The Biggest Themes of April - June 2020",
+      subtitle = "Relating to Covid-19",
+      fill = "Themes",
+      x = NULL,
+      y = "Tweets"
     )
   
 # April to June of 2021 ---------------------------------------------------
@@ -197,7 +201,8 @@ full_stop_words <- stop_words %>%
   
   original_2021 <- data2021 %>% 
     filter(str_detect(place, "Florida|FL")) %>% 
-    select(id, original_text)
+    select(id, original_text) %>% 
+    mutate(id = row_number())
   
   # cleaning 2021 original tweets FROM SCRATCH
   clean2021 <- original_2021 %>% 
@@ -246,8 +251,7 @@ full_stop_words <- stop_words %>%
                          "populati" = "population",
                          "emerge" = "emergency",
                          "announc" = "announce")) %>% 
-    count(id, word) %>% 
-    filter(n > 2)
+    count(id, word)
   
   # LDA Modeling
   dtm2021 <- words_2021 %>% 
@@ -255,7 +259,7 @@ full_stop_words <- stop_words %>%
   
   lda2021_k10 = LDA(
     dtm2021,
-    k = 10, 
+    k = 16, 
     method = "Gibbs",
     control = list(seed = 67)
   )
@@ -272,7 +276,7 @@ full_stop_words <- stop_words %>%
     slice_max(beta, n = 8) %>% 
     mutate(term2 = fct_reorder(term, beta))
   
-  ggplot(beta_2021_k10, aes(term2, beta, fill = as.factor(topic))) + 
+  ggplot(beta_2021_k10, aes(term, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free_y") + 
     coord_flip() +
@@ -299,7 +303,7 @@ full_stop_words <- stop_words %>%
                      "9" = "Health Reports",
                      "10" = "State of Covid Vaccines in June"))
   
-  # Replot with 10 topic names
+  # # Re-plot w/ topic titles
   ggplot(beta_2021_k10, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free_y") + 
@@ -310,37 +314,39 @@ full_stop_words <- stop_words %>%
       y = "Beta"
     )
   
+  # gamma to find most dominant/prevalent topic during 2020
   gamma_2021_k10 <- lda2021_k10 %>% 
     tidy(matrix = "gamma") %>% 
     mutate(
-      topic = as.character(topic),
-      topic = recode(topic,
-                     "1" = "Vaccines",
-                     "2" = "Vaccines",
-                     "3" = "Negative Effects of the Pandemic",
-                     "4" = "Vaccines",
-                     "5" = "Market & Economy",
-                     "6" = "Vaccines",
-                     "7" = "Vaccines",
-                     "8" = "Vaccines",
-                     "9" = "Health Reports",
-                     "10" = "Vaccines"))
+    topic = recode(topic,
+                   "1" = "Vaccine Announcements & Expert Advice",
+                   "2" = "Vaccine Distribution & County-level Reporting",
+                   "3" = "Negative Effects of the Pandemic",
+                   "4" = "Vaccine Transmission Messageing",
+                   "5" = "Market & Economy",
+                   "6" = "Vaccine & Public Health Measures",
+                   "7" = "Political Framing of Vaccines",
+                   "8" = "Vaccine Approval",
+                   "9" = "Health Reports",
+                   "10" = "State of Covid Vaccines in June"))
   
-  gamma_2021_k10 <- gamma_2021_k10 %>% 
-    group_by(topic) %>% 
-    summarize(gamma_total = sum(gamma)) %>% 
-    arrange(desc(gamma_total))
+  dominant_topic_2021 <- gamma_2021_k10 %>%
+    group_by(document) %>%
+    slice_max(gamma, n = 1, with_ties = FALSE) %>%
+    ungroup()
   
-  gamma_2021_k10
-
-  ggplot(gamma_2021_k10, aes(x="", y=gamma_total, fill=topic)) +
+  topic_counts_2021 <- dominant_topic_2021 %>%
+    count(topic, sort = TRUE) %>% 
+    mutate(topic = reorder(topic, n))
+  
+  ggplot(topic_counts_2021, aes(x = topic, y = n, fill = topic)) +
     geom_bar(stat = "identity", width = 1, color = "white") +
-    coord_polar("y", start=0) +
-    theme_void() +
+    geom_text(aes(label = n)) +
+    coord_flip() +
     labs(
-      title = "Most Popular Topic: Covid Vaccinations",
-      subtitle = "April-June 2021",
-      fill = "Topics"
+      title = "The Biggest Themes of April - June 2021",
+      subtitle = "Relating to Covid-19",
+      fill = "Themes",
+      x = NULL,
+      y = "Tweets"
     )
-  
-  
