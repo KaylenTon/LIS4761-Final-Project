@@ -169,9 +169,7 @@ server <- function(input, output){
 shinyApp(ui = ui, server = server)
 ```
 
-
-
-
+## Linear Regression
 
 For this regression Model, I selected the key variables, removed the missing values, and built a predicting model that analyzed which county factors were related to new percent positive cases. The results show that Median Age had the strongest relationship with New Percent Positive. At the same time, the other variables (EverMon and MonNow) did not predict changes in positivity rates as well as Median Age.
 
@@ -216,11 +214,6 @@ plot(fitted(lm1), myDF2$NewPercPos,
      ylab = "Observed New Percent Positive",
      main = "Fitted vs Observed")
 abline(0, 1)
-```
-
-
-```{r}
-
 ```
 
 ## Sentiment Analysis
