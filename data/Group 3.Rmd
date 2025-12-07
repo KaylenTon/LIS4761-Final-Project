@@ -463,15 +463,15 @@ full_stop_words <- stop_words %>%
     mutate(
       topic = as.character(topic),
       topic = recode(topic,
-                     "1" = "Severity Reports",
-                     "2" = "Trump Response",
-                     "3" = "National Government Response",
-                     "4" = "Global Supplies",
-                     "5" = "Vaccine Development",
-                     "6" = "Early Reopening Effects",
-                     "7" = "Government Action",
-                     "8" = "Virus Exposure to Workers",
-                     "9" = "Closing of American Public Spaces"))
+                     "1" = "County Health Reports & COVID Testing",
+                     "2" = "Home Life & Pandemic Updates",
+                     "3" = "Trump Administration & Government Response",
+                     "4" = "City-Level Impact & Death Counts",
+                     "5" = "Daily Updates & Economic Impact",
+                     "6" = "Critique on Government Reopening Decisions",
+                     "7" = "Frontline Medical Staff, Risks, and Plans",
+                     "8" = "Global and Economic Impact",
+                     "9" = "COVID Testing & Positivity Rates"))
   
   # Re-plot w/ topic titles
   ggplot(beta_2020_k9, aes(term2, beta, fill = as.factor(topic))) + 
@@ -487,15 +487,15 @@ full_stop_words <- stop_words %>%
     tidy(matrix = "gamma") %>%
     mutate(
       topic = recode(topic,
-                     "1" = "Severity Reports",
-                     "2" = "Trump Response",
-                     "3" = "National Government Response",
-                     "4" = "Global Supplies",
-                     "5" = "Vaccine Development",
-                     "6" = "Early Reopening Effects",
-                     "7" = "Government Action",
-                     "8" = "Virus Exposure to Workers",
-                     "9" = "Closing of American Public Spaces"))
+                     "1" = "County Health Reports & COVID Testing",
+                     "2" = "Home Life & Pandemic Updates",
+                     "3" = "Trump Administration & Government Response",
+                     "4" = "City-Level Impact & Death Counts",
+                     "5" = "Daily Updates & Economic Impact",
+                     "6" = "Critique on Government Reopening Decisions",
+                     "7" = "Frontline Medical Staff, Risks, and Plans",
+                     "8" = "Global and Economic Impact",
+                     "9" = "COVID Testing & Positivity Rates"))
   
   dominant_topic_2020 <- gamma_2020_k16 %>%
     group_by(document) %>%
@@ -523,13 +523,13 @@ full_stop_words <- stop_words %>%
 **For context**: Early April, the CDC announced new mask-wearing guidelines. Many people complied; current President Trump did not. Florida ended quarantine on April 30th and moved into phases of reopening the public. In early June, the state had entered phase two of reopening, meaning allowing bars, theaters, and other public building spaces to run at 50% capacity. There was no vaccine yet, but development, research, and human clinical trials had been ongoing and fast. 
 
 The most prominent topics that Floridians, likely like most people, talked about during April-June of 2020 are:
-1. **Severity Reports** - Because the global pandemic is new to most people, and many people across the globe were experiencing severe illness and death counts kept rising, there were so many updates. I remember back in my senior of high school where I was checking covid cases every day. With just one case in your state, it spreads like wildfire---both the virus and news.
-2. **Trump's Response** - We were under Trump's presidency during the time these tweets were collected. Many people criticized his response to covid-19, where he would give poor medical advice (such as injecting disinfectants to treat the virus at home), him turning the U.S. away from participating in the World Health Organization's vaccine project, and his lack of serious leadership.
-3. **National Government Response** - During this period, the White House held frequent briefings and released evolving public health guidelines. Additionally, during March, Medicaid temporarily expanded telehealth benefits. This provided a wider range of healthcare to the beneficiaries with the need to travel to a healthcare facility.
+1. **County Health Reports & COVID Testing** - Because the global pandemic is new to most people, and many people across the globe were experiencing severe illness and death counts kept rising, there were so many updates and some many people watching the numbers climb. I remember back in my senior of high school where I was checking covid cases every day. With just one case in your state, it spreads like wildfire---both the virus and news.
+2. **Home Life and Pandemic Updates** - Admidst the reopeing and returning to a more normal life again, it seems many conversations and tweet documents showed people's reliance on official pandemic updates to decide how to move forward. Reopening with no mask mandates in Florida, there was a surge in cases. Keep in mind, again, that there was no vaccine, which definitely led to more patients. The word 'China' may have to do with the origin of the virus or blaming the country. 
+3. **Trump Administration & Government Response** - We were under Trump's presidency during the time these tweets were collected. During this period, the White House held frequent briefings and released evolving public health guidelines. Additionally, during March, Medicaid temporarily expanded telehealth benefits. This provided a wider range of healthcare to the beneficiaries with the need to travel to a healthcare facility.
 
 ***More can be found here:*** <https://www.cdc.gov/museum/timeline/covid19.html>
 
-Overall, many of the tweets consisted of reporting of official news, health guidelines and also a lot of conversations around these new experiences, such as the entire pandemic and also reopening after quarantine, which some people were precautious and others were tired of quarantine and masks.
+Overall, many of the tweets consisted of reporting official news, health guidelines and also a lot of conversations around these new experiences, such as the entire pandemic and home life. Reopening after quarantine, some people were precautious and others were tired of quarantine and masks.
 
 One topic that I found interesting and nostalgic (but I changed the model since I made a *major* preprocessing error) was something Jadyn and I labeled as *Community Support for Healthcare Workers*. After code revisions and changes in the k value, that topic was never seen or at least obvious again.
 
@@ -633,14 +633,14 @@ I basically repeat most of the code I did for the 2020 data with the 2021 data, 
     mutate(
       topic = as.character(topic),
       topic = recode(topic,
-                     "1" = "Daily Vaccine Updates",
-                     "2" = "Global Vaccine Rollout",
-                     "3" = "Variants and Lab Findings",
-                     "4" = "Research Updates",
-                     "5" = "Administrating Vaccines",
-                     "6" = "Student Vaccination",
-                     "7" = "National Covid Death Reports",
-                     "8" = "Vaccine Approval"))
+                     "1" = "Vaccination Sites & Global Aid",
+                     "2" = "Health Plans & News",
+                     "3" = "Desantis Prohibiting COVID Vaccine Mandates",
+                     "4" = "Variant Severity & Texan Hospital Lawsuit",
+                     "5" = "Information Reports & Updates",
+                     "6" = "Vaccines & COVID Origin Research",
+                     "7" = "Vaccines and Pandemic Situation News",
+                     "8" = "Biden Administration & Health Risks"))
   
   # # Re-plot w/ topic titles
   ggplot(beta_2021_k10, aes(term2, beta, fill = as.factor(topic))) + 
@@ -658,14 +658,14 @@ I basically repeat most of the code I did for the 2020 data with the 2021 data, 
     tidy(matrix = "gamma") %>% 
     mutate(
     topic = recode(topic,
-                   "1" = "Daily Vaccine Updates",
-                   "2" = "Global Vaccine Rollout",
-                   "3" = "Variants and Lab Findings",
-                   "4" = "Research Updates",
-                   "5" = "Administrating Vaccines",
-                   "6" = "Student Vaccination",
-                   "7" = "National Covid Death Reports",
-                   "8" = "Vaccine Approval"))
+                     "1" = "Vaccination Sites & Global Aid",
+                     "2" = "Health Plans & News",
+                     "3" = "Desantis Prohibiting COVID Vaccine Mandates",
+                     "4" = "Variant Severity & Texan Hospital Lawsuit",
+                     "5" = "Information Reports & Updates",
+                     "6" = "Vaccines & COVID Origin Research",
+                     "7" = "Vaccines and Pandemic Situation News",
+                     "8" = "Biden Administration & Health Risks"))
   
   dominant_topic_2021 <- gamma_2021_k10 %>%
     group_by(document) %>%
@@ -689,19 +689,16 @@ I basically repeat most of the code I did for the 2020 data with the 2021 data, 
     ) + theme_bw()
   
 ```
-In contrast to the previous topics found in tweets from mid-2020, where the prevalent themes regarded most of official covid updates, such as infection counts, new policy and big changes, and health guidelines as well as government responses, the topics of 2021 is dominated by the existence of vaccines. Obviously, there was no covid vaccine while investigating the tweets from 2020, since the first covid vaccine came out in the December of 2020. 
+In contrast to the previous topics found in tweets from mid-2020, the topics of 2021 is dominated by the existence of vaccines. That makes sense. There was no covid vaccine while investigating the tweets from 2020, since the first covid vaccine came out in the December of 2020.
 
-**Some context:** At this time, we were under the Biden administration, which joins COVAX---program aimed at vaccinating people in low and middle income countries against COVID-19. Hence the second most prevalent topic in 2021 regarding covid: global vaccine rollouts. Poorer countries did not have access to vaccines as early as we did. While experimenting with other k values, I saw 'India' pop up a lot.
+**Some context:** At this time, we were under the Biden administration, which joins COVAX---program aimed at vaccinating people in low and middle income countries against COVID-19. Hence the most prevalent topic in 2021 regarding covid: Vaccination Sites & Global Aid. Vaccines were being distributed more, nationally and internationally. Also, by spring of 2021, about most age groups were able vaccinated, including senior citizens, adults, and adolescents.
 
-There is strong pushback for vaccines in general, but during 2021, variants like *delta* and *omicron* came to be. They were either extremely more contagious or more severe, but a large population of people still refused to wear masks and get vaccinated, fearing the long term complications due to limited testing. Some other, more niche topics I discovered and found interesting while reading some tweets to help gauge the context of some words during the beta stage (but I changed k-values and lost their focuses) were...
-1. research was being done to find covid's origins
-2. a lawsuit towards a Texas hospital for requiring covid vaccinations
-3. mask mandates and pushback
+There is strong pushback for vaccines in general, but during 2021, variants like *delta* and *omicron* came to be. They were either extremely more contagious or more severe, but a large population of people still refused to wear masks and get vaccinated, fearing the long term complications due to limited testing. Desantis officially prohibited vaccine and mask mandates.
 
-Ultimately, comparing the tweets and their topics with a one year gap highlight vaccine developments. In the 2020 tweets, Florida was just starting to reopen. And in 2021, life felt more normal, at least for the U.S. (hence less conversations on the national death reports.) The same cannot be said about lower income countries globally, which relied of other countries' distribution of vaccines. Despite vaccines being a game changer, allowing the reopening of society to function so well, masks were and vaccines still are very controversial. The theme of vaccines heavily dominated several topics in 2021.
+Ultimately, comparing the tweets and their topics with a one year gap highlights *vaccine developments*. In the 2020 tweets, Florida was just starting to reopen. And in 2021, life felt more normal, at least for the U.S. (hence less conversations on the national death reports.) The same cannot be said about lower income countries globally, which relied of other countries' distribution of vaccines. Despite vaccines being a game changer, allowing the reopening of society to function so well, masks were and vaccines still are very controversial. The theme of vaccines heavily dominated several topics in 2021.
 
 ## Conclusion
 
 This project was a way to combine text mining through Twitter with COVID-19 data across Florida counties in an attempt to see how varied, and ultimately, how trends changed throughout the pandemic. For example, exploratory data analysis revealed that the largest urban counties had the most cases but in a number of smaller, rural counties, the positivity rate was worse likely due to lower testing volume. Linear regression supported that median age was the strongest predictor of new percent positive cases while weaker contributors that could be controlled for suggested that structure was more important than those variables across counties. 
 
-From the Twitter analysis, topic modeling implied how people were generally talking about different subjects of the pandemic over time. For 2020, the strongest topics were severity reporting, government response, reopening and early vaccine . However, for 2021, rollout, mandates, approvals and even public hesitancy to vaccines dominated Twitter. Finally, sentiment analysis supported these shifts by showing changes in public mood across time, with fluctuations tied to major pandemic events such as surges, reopenings, and vaccine availability. Overall, this project suggests that by combining real data with public perception data, a further understanding can be met as to how behavior and outcomes shifted during COVID-19. These methods can all be applicable for public health emergencies to assess what people are discussing for policy decisions and better emergency preparedness.
+From the Twitter analysis, topic modeling implied how people were generally talking about different subjects of the pandemic over time. For 2020, the strongest topics were health and test reports, pandemic updates, and government response. However, for 2021, we can observe a strong presence of vaccines, including its existence, distribution, futher research, and pushback against requirements and updates. Finally, sentiment analysis supported these shifts by showing changes in public mood across time, with fluctuations tied to major pandemic events such as surges, reopenings, and vaccine availability. Overall, this project suggests that by combining real data with public perception data, a further understanding can be met as to how behavior and outcomes shifted during COVID-19. These methods can all be applicable for public health emergencies to assess what people are discussing for policy decisions and better emergency preparedness.
