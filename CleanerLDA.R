@@ -34,7 +34,10 @@ more_stop_words <- tribble(
   "dyannleroy", "CUTSOM",
   "ten", "CUSTOM",
   "million", "CUSTOM",
-  "di", "CUSTOM"
+  "di", "CUSTOM",
+  "pm", "CUSTOM",
+  "dianeswonk", "CUSTOM",
+  "residency", "CUSTOM"
 )
 
 full_stop_words <- stop_words %>% 
@@ -95,7 +98,8 @@ full_stop_words <- stop_words %>%
                          "countie" = "county",
                          "populati" = "population",
                          "emerge" = "emergency",
-                         "announc" = "announce")) %>% 
+                         "announc" = "announce",
+                         "updat" = "update")) %>% 
     count(id, word)
   
   # LDA Modeling
@@ -149,7 +153,7 @@ full_stop_words <- stop_words %>%
     facet_wrap(~topic, scales = "free_y") +
     coord_flip() +
     labs(title = "April - June 2020 Topics",
-         x = "Words",
+         x = NULL,
          y = "Beta") + theme_bw()
   
   # gamma to find most dominant/prevalent topic during 2020
@@ -232,7 +236,7 @@ full_stop_words <- stop_words %>%
                          "informat" = "information",
                          "posit" = "positive",
                          "mani" = "humanity",
-                         "commun" = "community",
+                         "communi" = "community",
                          "preside" = "president", 
                          "respons" = "response",
                          "raise" = "fundraise",
@@ -243,7 +247,9 @@ full_stop_words <- stop_words %>%
                          "countie" = "county",
                          "populati" = "population",
                          "emerge" = "emergency",
-                         "announc" = "announce")) %>% 
+                         "announc" = "announce",
+                         "updat" = "update",
+                         "requir" = "require")) %>% 
     count(id, word)
   
   # LDA Modeling
@@ -252,9 +258,9 @@ full_stop_words <- stop_words %>%
   
   lda2021_k10 = LDA(
     dtm2021,
-    k = 10, 
+    k = 8, 
     method = "Gibbs",
-    control = list(seed = 67)
+    control = list(seed = 10)
   )
   
   glimpse(lda2021_k10)
@@ -280,20 +286,17 @@ full_stop_words <- stop_words %>%
   
   # Labeling human-identified topics using k = 10
   beta_2021_k10 <- beta_2021_k10 %>% 
-    filter(topic %in% 1:12) %>% 
     mutate(
       topic = as.character(topic),
       topic = recode(topic,
-                     "1" = "Vaccine Announcements & Expert Advice",
-                     "2" = "Vaccine Distribution & County-level Reporting",
-                     "3" = "Negative Effects of the Pandemic",
-                     "4" = "Vaccine Transmission Messageing",
-                     "5" = "Market & Economy",
-                     "6" = "Vaccine & Public Health Measures",
-                     "7" = "Political Framing of Vaccines",
-                     "8" = "Vaccine Approval",
-                     "9" = "Health Reports",
-                     "10" = "State of Covid Vaccines in June"))
+                     "1" = "Investigating Covid Origins",
+                     "2" = "Global Vaccine Rollout",
+                     "3" = "Variants and Lab Findings",
+                     "4" = "Research Updates",
+                     "5" = "Administrating Vaccines",
+                     "6" = "Student Vaccination",
+                     "7" = "National Covid Death Reports",
+                     "8" = "Vaccine Approval"))
   
   # # Re-plot w/ topic titles
   ggplot(beta_2021_k10, aes(term2, beta, fill = as.factor(topic))) + 
@@ -302,25 +305,23 @@ full_stop_words <- stop_words %>%
     coord_flip() +
     labs(
       title = "April - June 2021 Topics",
-      x = "Words",
+      x = NULL,
       y = "Beta"
-    )
+    ) + theme_bw()
   
   # gamma to find most dominant/prevalent topic during 2020
   gamma_2021_k10 <- lda2021_k10 %>% 
     tidy(matrix = "gamma") %>% 
     mutate(
     topic = recode(topic,
-                   "1" = "Vaccine Announcements & Expert Advice",
-                   "2" = "Vaccine Distribution & County-level Reporting",
-                   "3" = "Negative Effects of the Pandemic",
-                   "4" = "Vaccine Transmission Messageing",
-                   "5" = "Market & Economy",
-                   "6" = "Vaccine & Public Health Measures",
-                   "7" = "Political Framing of Vaccines",
-                   "8" = "Vaccine Approval",
-                   "9" = "Health Reports",
-                   "10" = "State of Covid Vaccines in June"))
+                   "1" = "Investigating Covid Origins",
+                   "2" = "Global Vaccine Rollout",
+                   "3" = "Variants and Lab Findings",
+                   "4" = "Research Updates",
+                   "5" = "Administrating Vaccines",
+                   "6" = "Student Vaccination",
+                   "7" = "National Covid Death Reports",
+                   "8" = "Vaccine Approval"))
   
   dominant_topic_2021 <- gamma_2021_k10 %>%
     group_by(document) %>%
@@ -341,4 +342,5 @@ full_stop_words <- stop_words %>%
       fill = "Themes",
       x = NULL,
       y = "Tweets"
-    )
+    ) + theme_bw()
+  
