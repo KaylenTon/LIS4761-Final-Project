@@ -11,7 +11,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-In plain text, someone (maybe Jadyn) should introduce our topics, data, and research questions.
+Our project analyzes COVID-19 pandemic from both a public perception and data-driven perspective. We combined text mining and sentiment analysis of Twitter data with exploratory data analysis and regression modeling of Florida’s county-level COVID-19 data. We used two main datasets:
+
+A Kaggle Twitter dataset with over 400,000 tweets across three time periods to study how public discussions and emotions about COVID-19 changed over time.
+
+A Florida county-level dataset from the U.S. COVID-19 library, which includes variables such as new percent positive cases, deaths, testing rates, and median age, to explore factors related to infection rates.
+
+Our research questions were:
+
+How did major COVID-19 discussion topics and sentiments shift across different stages of the pandemic? 
+Which county-level factors best predict new percent positive COVID-19 rates in Florida?
+
 
 ```{r}
 # EVERYONE LOAD YOUR LIBRARIES HERE. DO NOT DUPLICATE.
