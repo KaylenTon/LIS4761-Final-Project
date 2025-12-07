@@ -1,6 +1,6 @@
 ---
 title: "Group 3"
-author: "Kaylen, Veronica Vaccaro, Lyndsey [ADD YOUR NAMES]"
+author: "Kaylen, Veronica Vaccaro, Lyndsey, Jadyn, Kingsley"
 date: "2025-12-03"
 output: html_document
 ---
@@ -702,4 +702,6 @@ Ultimately, comparing the tweets and their topics with a one year gap highlight 
 
 ## Conclusion
 
-Jadyn.
+This project was a way to combine text mining through Twitter with COVID-19 data across Florida counties in an attempt to see how varied, and ultimately, how trends changed throughout the pandemic. For example, exploratory data analysis revealed that the largest urban counties had the most cases but in a number of smaller, rural counties, the positivity rate was worse likely due to lower testing volume. Linear regression supported that median age was the strongest predictor of new percent positive cases while weaker contributors that could be controlled for suggested that structure was more important than those variables across counties. 
+
+From the Twitter analysis, topic modeling implied how people were generally talking about different subjects of the pandemic over time. For 2020, the strongest topics were severity reporting, government response, reopening and early vaccine . However, for 2021, rollout, mandates, approvals and even public hesitancy to vaccines dominated Twitter. Finally, sentiment analysis supported these shifts by showing changes in public mood across time, with fluctuations tied to major pandemic events such as surges, reopenings, and vaccine availability. Overall, this project suggests that by combining real data with public perception data, a further understanding can be met as to how behavior and outcomes shifted during COVID-19. These methods can all be applicable for public health emergencies to assess what people are discussing for policy decisions and better emergency preparedness.
