@@ -24,7 +24,9 @@ library(tm)
 library(SnowballC)
 library(shiny)
 library(readr)
-library(dplyr)
+library(skimr)
+library(lubridate)
+library(textstem)
 ```
 
 ## Exploratory Analysis
@@ -227,12 +229,6 @@ Lydnsey Also type in plain text, explaining what you did a bit and found.
 
 ```{r}
 # Loads libraries
-library(tidyverse)
-library(tidytext)
-library(skimr)
-library(lubridate)
-library(textstem)
-
 tweets_apr_jun <- read_csv("COVIDTweetsAprilToJune2020.csv")
 tweets_aug_sep <- read_csv("COVIDTweetsAprilToJune2021.csv")
 tweets <- bind_rows(tweets_apr_jun, tweets_aug_sep)
@@ -315,7 +311,9 @@ ggplot(top_words_fl, aes(x = reorder(word, n), y = n, fill = sentiment.y)) +
 
 ## Topic Modeling
 
-Creating my customs words. Some of the words are obvious topic words, such as "covid19" which would become redundant. Others include numbers that didn't get cleaned out with my cleaning functions (I don't know why) and some words that add no value to the topic-naming stage via beta scores.
+The goal is to compare topics and themes discussed revolving around COVID-19 during April-June of 2020 and April-June of 2021---a one year difference.
+
+**I created my own customs words.** Some of the words are obvious topic words, such as "covid19" which would become redundant. Others include numbers that didn't get cleaned out with my cleaning functions and some other words that add no value to the topic-naming stage via beta scores.
 
 ```{r}
 
@@ -357,7 +355,8 @@ full_stop_words <- stop_words %>%
 
 ```
 
-April to June of 2020 - Preparing my data
+### April to June of 2020 - Preparing my data
+- I loaded in my data, assigned unique ids, cleaned the tweets, tokenized my documents, performed word stemming and stem completion, the counted words per id.
 
 ```{r}
 
@@ -421,7 +420,7 @@ April to June of 2020 - Preparing my data
 
 ```
 
-Creating the 2020 LDA model:
+### Creating the 2020 LDA model:
 
 ```{r}
 
@@ -462,7 +461,7 @@ Creating the 2020 LDA model:
       topic = recode(topic,
                      "1" = "Severity Reports",
                      "2" = "Trump Response",
-                     "3" = "Public Health Reports",
+                     "3" = "National Government Response",
                      "4" = "Global Supplies",
                      "5" = "Vaccine Development",
                      "6" = "Early Reopening Effects",
@@ -486,7 +485,7 @@ Creating the 2020 LDA model:
       topic = recode(topic,
                      "1" = "Severity Reports",
                      "2" = "Trump Response",
-                     "3" = "Public Health Reports",
+                     "3" = "National Government Response",
                      "4" = "Global Supplies",
                      "5" = "Vaccine Development",
                      "6" = "Early Reopening Effects",
@@ -517,14 +516,21 @@ Creating the 2020 LDA model:
     ) + theme_bw()
 
 ```
+**For context**: Early April, the CDC announced new mask-wearing guidelines. Many people complied; current President Trump did not. Florida ended quarantine on April 30th and moved into phases of reopening the public. In early June, the state had entered phase two of reopening, meaning allowing bars, theaters, and other public building spaces to run at 50% capacity. There was no vaccine yet, but development, research, and human clinical trials had been ongoing and fast. 
+
 The most prominent topics that Floridians, likely like most people, talked about during April-June of 2020 are:
-1. **Daily Reports on Covid Numbers** - likely because cases keep stacking and it brews fear
-2. **Mortality & Global Severity** - a global pandemic was definitely a new experience for most people alive today. The coronavirus caused severe illness and many deaths. It was happening globally and hitting close to many people's homes and personal lives. 
-3. **Quarantine** - At this point in time, Florida had just begun reopening its counties, allowing public places such as retail stores and restuarants. 
+1. **Severity Reports** - Because the global pandemic is new to most people, and many people across the globe were experiencing severe illness and death counts kept rising, there were so many updates. I remember back in my senior of high school where I was checking covid cases every day. With just one case in your state, it spreads like wildfire---both the virus and news.
+2. **Trump's Response** - We were under Trump's presidency during the time these tweets were collected. Many people criticized his response to covid-19, where he would give poor medical advice (such as injecting disinfectants to treat the virus at home), him turning the U.S. away from participating in the World Health Organization's vaccine project, and his lack of serious leadership.
+3. **National Government Response** - During this period, the White House held frequent briefings and released evolving public health guidelines. Additionally, during March, Medicaid temporarily expanded telehealth benefits. This provided a wider range of healthcare to the beneficiaries with the need to travel to a healthcare facility.
 
+***More can be found here:*** <https://www.cdc.gov/museum/timeline/covid19.html>
 
-I basically repeat most of the code I did for the 2020 data with the 2021 data.
-April to June of 2021 - Preparing my data:
+Overall, many of the tweets consisted of reporting of official news, health guidelines and also a lot of conversations around these new experiences, such as the entire pandemic and also reopening after quarantine, which some people were precautious and others were tired of quarantine and masks.
+
+One topic that I found interesting and nostalgic (but I changed the model since I made a *major* preprocessing error) was something Jadyn and I labeled as *Community Support for Healthcare Workers*. After code revisions and changes in the k value, that topic was never seen or at least obvious again.
+
+### April to June of 2021 - Preparing my data and running an LDA model
+I basically repeat most of the code I did for the 2020 data with the 2021 data, switching out and renaming new objects.
 
 ```{r}
 
@@ -623,7 +629,7 @@ April to June of 2021 - Preparing my data:
     mutate(
       topic = as.character(topic),
       topic = recode(topic,
-                     "1" = "Investigating Covid Origins",
+                     "1" = "Daily Vaccine Updates",
                      "2" = "Global Vaccine Rollout",
                      "3" = "Variants and Lab Findings",
                      "4" = "Research Updates",
@@ -648,7 +654,7 @@ April to June of 2021 - Preparing my data:
     tidy(matrix = "gamma") %>% 
     mutate(
     topic = recode(topic,
-                   "1" = "Investigating Covid Origins",
+                   "1" = "Daily Vaccine Updates",
                    "2" = "Global Vaccine Rollout",
                    "3" = "Variants and Lab Findings",
                    "4" = "Research Updates",
@@ -679,7 +685,16 @@ April to June of 2021 - Preparing my data:
     ) + theme_bw()
   
 ```
-Though we set our k value to equal ten and ended up labeling ten topics, one thing I noticed about the 2021 tweet data was that the word "vaccine" dominated in several of the topics when observing beta values. It's clear that the conversation shifted to the topics of covid vaccinations in 2021. This contrasts the conversations around covid in 2020, where we were living in a time of __starting__ to return to normal routines after a strict quarantine, lived through reports of many cases, thinking the world changed forever. Conversations were more diverse around the main topic of Covid back then. In 2021, when vaccines were out and rolling, Governor Desantis vocally spoke about no vaccine mandates.
+In contrast to the previous topics found in tweets from mid-2020, where the prevalent themes regarded most of official covid updates, such as infection counts, new policy and big changes, and health guidelines as well as government responses, the topics of 2021 is dominated by the existence of vaccines. Obviously, there was no covid vaccine while investigating the tweets from 2020, since the first covid vaccine came out in the December of 2020. 
+
+**Some context:** At this time, we were under the Biden administration, which joins COVAX---program aimed at vaccinating people in low and middle income countries against COVID-19. Hence the second most prevalent topic in 2021 regarding covid: global vaccine rollouts. Poorer countries did not have access to vaccines as early as we did. While experimenting with other k values, I saw 'India' pop up a lot.
+
+There is strong pushback for vaccines in general, but during 2021, variants like *delta* and *omicron* came to be. They were either extremely more contagious or more severe, but a large population of people still refused to wear masks and get vaccinated, fearing the long term complications due to limited testing. Some other, more niche topics I discovered and found interesting while reading some tweets to help gauge the context of some words during the beta stage (but I changed k-values and lost their focuses) were...
+1. research was being done to find covid's origins
+2. a lawsuit towards a Texas hospital for requiring covid vaccinations
+3. mask mandates and pushback
+
+Ultimately, comparing the tweets and their topics with a one year gap highlight vaccine developments. In the 2020 tweets, Florida was just starting to reopen. And in 2021, life felt more normal, at least for the U.S. (hence less conversations on the national death reports.) The same cannot be said about lower income countries globally, which relied of other countries' distribution of vaccines. Despite vaccines being a game changer, allowing the reopening of society to function so well, masks were and vaccines still are very controversial. The theme of vaccines heavily dominated several topics in 2021.
 
 ## Conclusion
 
