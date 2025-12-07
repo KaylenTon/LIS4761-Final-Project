@@ -20,6 +20,7 @@ A Florida county-level dataset from the U.S. COVID-19 library, which includes va
 Our research questions were:
 
 How did major COVID-19 discussion topics and sentiments shift across different stages of the pandemic? 
+
 Which county-level factors best predict new percent positive COVID-19 rates in Florida?
 
 
