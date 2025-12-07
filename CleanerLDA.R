@@ -50,7 +50,7 @@ full_stop_words <- stop_words %>%
   original_2020 <- data2020 %>% 
     filter(str_detect(place, "Florida|FL")) %>% 
     select(id, original_text) %>% 
-    mutate(id = row_number())
+    mutate(id = row_number()) # Reassign unique ids because the scientific notation made documents appears to be the same docs/source.
   
   # cleaning 2020 original tweets FROM SCRATCH
   clean2020 <- original_2020 %>% 
@@ -72,13 +72,14 @@ full_stop_words <- stop_words %>%
     anti_join(full_stop_words) %>%
     distinct(word) %>% 
     pull(word)
+  # This dictionary will be used to stem-complete the words after I stem them.
   
   stem2020 <- clean2020 %>% 
     mutate(word = wordStem(word)) %>% 
     mutate(
       word = unlist(lapply(word, stemCompletion, dictionary = dictionary_2020))
     )
-  
+  # The words did not 100% stem the way I had hoped, so I manually fixed some of them after searching/filtering through the original tweets to find the best match if needed. I repeat these same words for manual stem completion in the 2021 data processing (next) too. Still, stem completion saved a lot of time and cleaned up the data well enough.
   words_2020 <- stem2020 %>% 
     drop_na() %>% 
     anti_join(full_stop_words) %>% 
@@ -108,7 +109,7 @@ full_stop_words <- stop_words %>%
   
   lda2020_k9 = LDA(
     dtm2020,
-    k = 9, 
+    k = 9, # After many trial and errors, I found this k value to be the most humanly interpret-able for the 2020 covid data.
     method = "Gibbs",
     control = list(seed = 67)
   )
@@ -116,17 +117,17 @@ full_stop_words <- stop_words %>%
   glimpse(lda2020_k9)
   
   beta_2020_k9 <- lda2020_k9 %>% 
-    tidy(matrix = "beta")
+    tidy(matrix = "beta") # Beta to find out the words within a topic to analyze them.
   
   beta_2020_k9 <- beta_2020_k9 %>% 
     arrange(desc(beta)) %>% 
     group_by(topic) %>%
-    slice_max(beta, n = 8) %>% 
+    slice_max(beta, n = 8) %>% # 8 words at a time in a column chart, but if any beta values tie, they will both (or more) show, which is fine.
     mutate(term2 = fct_reorder(term, beta))
   
   ggplot(beta_2020_k9, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
-    facet_wrap(~topic, scales = "free_y") +
+    facet_wrap(~topic, scales = "free_y") + # free_y scale so that the beta ticks change in the same increments across plots.
     coord_flip() +
     labs(title = "April - June 2020 Topics",
          x = "Words",
@@ -150,7 +151,7 @@ full_stop_words <- stop_words %>%
   # Re-plot w/ topic titles
   ggplot(beta_2020_k9, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
-    facet_wrap(~topic, scales = "free_y") +
+    facet_wrap(~topic, scales = "free_y") + 
     coord_flip() +
     labs(title = "April - June 2020 Topics",
          x = NULL,
@@ -158,7 +159,7 @@ full_stop_words <- stop_words %>%
   
   # gamma to find most dominant/prevalent topic during 2020
   gamma_2020_k16 <- lda2020_k9 %>% 
-    tidy(matrix = "gamma") %>% 
+    tidy(matrix = "gamma") %>%
     mutate(
       topic = recode(topic,
                      "1" = "Severity Reports",
@@ -174,12 +175,13 @@ full_stop_words <- stop_words %>%
   dominant_topic_2020 <- gamma_2020_k16 %>%
     group_by(document) %>%
     slice_max(gamma, n = 1, with_ties = FALSE) %>%
-    ungroup()
+    ungroup() # finding the best fit topic per document
   
-  topic_counts_2020 <- dominant_topic_2020 %>%
+  topic_counts_2020 <- dominant_topic_2020 %>% 
     count(topic, sort = TRUE) %>% 
-    mutate(topic = reorder(topic, n))
+    mutate(topic = reorder(topic, n)) # adding up documents per topic
   
+  # Bar charts > Pie charts
   ggplot(topic_counts_2020, aes(x = topic, y = n, fill = topic)) +
     geom_bar(stat = "identity", width = 1, color = "white") +
     geom_text(aes(label = n)) +
