@@ -1,0 +1,407 @@
+---
+title: "LDA Topic Modeling on COVID-19 Related Tweets From Florida During April - June 2020 and 2021"
+author: "Kaylen Ton"
+output: html_document
+---
+
+### Loading my packages
+```{r - packages}
+library(tidyverse)
+library(tidytext)
+library(topicmodels)
+library(ggplot2)
+library(qdap)
+library(tm)
+library(SnowballC)
+library(RColorBrewer)
+```
+
+## Topic Modeling
+
+The goal is to compare topics and themes discussed revolving around COVID-19 during April-June of 2020 and April-June of 2021---a one year difference.
+
+**I created my own customs words.** Some of the words are obvious topic words, such as "covid19" which would become redundant. Others include numbers that didn't get cleaned out with my cleaning functions and some other words that add no value to the topic-naming stage via beta scores.
+
+```{r - Stop words}
+
+more_stop_words <- tribble(
+  ~word, ~lexicon,
+  "covid19", "CUSTOM",
+  "coronavirus", "CUSTOM",
+  "rt", "CUSTOM",
+  "covid", "CUSTOM",
+  "19", "CUSTOM",
+  "florida", "CUSTOM",
+  "coronaviru", "CUSTOM",
+  "http", "CUSTOM",
+  "covidnineteen", "CUSTOM",
+  "don’t", "CUSTOM",
+  "it’s", "CUSTOM",
+  "hundreds", "CUSTOM",
+  "thousands", "CUSTOM",
+  "millions", "CUSTOM",
+  "thousandth", "CUSTOM",
+  "fauci", "CUSTOM",
+  "amp", "CUSTOM",
+  "port", "CUSTOM",
+  "due", "CUSTOM",
+  "stainless", "CUSTOM",
+  "include", "CUSTOM",
+  "video", "CUSTOM",
+  "dyannleroy", "CUTSOM",
+  "ten", "CUSTOM",
+  "million", "CUSTOM",
+  "di", "CUSTOM",
+  "pm", "CUSTOM",
+  "dianeswonk", "CUSTOM",
+  "residency", "CUSTOM"
+)
+
+full_stop_words <- stop_words %>% 
+  bind_rows(more_stop_words)
+
+```
+
+### April to June of 2020 - Preparing my data
+- I loaded in my data, assigned unique ids, cleaned the tweets, tokenized my documents, performed word stemming and stem completion, the counted words per id.
+
+```{r - 2020}
+
+  data2020 <- read.csv("data/COVIDTweetsAprilToJune2020.csv")
+  
+  original_2020 <- data2020 %>% 
+    filter(str_detect(place, "Florida|FL")) %>% 
+    select(id, original_text) %>% 
+    mutate(id = row_number()) # Reassign unique ids because the scientific notation made documents appears to be the same docs/source.
+  
+  # cleaning 2020 original tweets FROM SCRATCH
+  clean2020 <- original_2020 %>% 
+    mutate(original_text = as.character(original_text)) %>% 
+    mutate(original_text = replace_contraction(original_text)) %>% 
+    mutate(original_text = replace_number(original_text)) %>% 
+    mutate(original_text = str_remove_all(original_text, "https?://.*$")) %>% 
+    mutate(original_text = str_remove_all(original_text, "RT ")) %>% 
+    mutate(original_text = str_remove_all(original_text, "@\\w+")) %>% 
+    mutate(original_text = removePunctuation(original_text)) %>%
+    mutate(original_text = str_remove_all(original_text, "'")) %>% 
+    mutate(original_text = removeNumbers(original_text)) %>% 
+    unnest_tokens(word, original_text) %>% 
+    anti_join(full_stop_words)
+
+  dictionary_2020 <- original_2020 %>% 
+    select(original_text) %>% 
+    unnest_tokens(word, original_text) %>% 
+    anti_join(full_stop_words) %>%
+    distinct(word) %>% 
+    pull(word)
+  # This dictionary will be used to stem-complete the words after I stem them.
+  
+  stem2020 <- clean2020 %>% 
+    mutate(word = wordStem(word)) %>% 
+    mutate(
+      word = unlist(lapply(word, stemCompletion, dictionary = dictionary_2020))
+    )
+  # The words did not 100% stem the way I had hoped, so I manually fixed some of them after searching/filtering through the original tweets to find the best match if needed. I repeat these same words for manual stem completion in the 2021 data processing (next) too. Still, stem completion saved a lot of time and cleaned up the data well enough.
+  words_2020 <- stem2020 %>% 
+    drop_na() %>% 
+    anti_join(full_stop_words) %>% 
+    mutate(word = recode(word,
+                         "viru" = "virus",
+                         "informat" = "information",
+                         "posit" = "positive",
+                         "mani" = "humanity",
+                         "commun" = "community",
+                         "preside" = "president", 
+                         "respons" = "response",
+                         "raise" = "fundraise",
+                         "busin" = "business",
+                         "hospita" = "hospital",
+                         "vaccin" = "vaccine",
+                         "accounc" = "announce",
+                         "countie" = "county",
+                         "populati" = "population",
+                         "emerge" = "emergency",
+                         "announc" = "announce",
+                         "updat" = "update")) %>% 
+    count(id, word)
+
+```
+
+### Creating the 2020 LDA model:
+
+```{r}
+
+  # LDA Modeling
+  dtm2020 <- words_2020 %>% 
+    cast_dtm(id, word, n)
+  
+  lda2020_k9 = LDA(
+    dtm2020,
+    k = 9, # After many trial and errors, I found this k value to be the most humanly interpret-able for the 2020 covid data.
+    method = "Gibbs",
+    control = list(seed = 67)
+  )
+  
+  glimpse(lda2020_k9)
+  
+  beta_2020_k9 <- lda2020_k9 %>% 
+    tidy(matrix = "beta") # Beta to find out the words within a topic to analyze them.
+  
+  beta_2020_k9 <- beta_2020_k9 %>% 
+    arrange(desc(beta)) %>% 
+    group_by(topic) %>%
+    slice_max(beta, n = 8) %>% # 8 words at a time in a column chart, but if any beta values tie, they will both (or more) show, which is fine.
+    mutate(term2 = fct_reorder(term, beta))
+  
+  ggplot(beta_2020_k9, aes(term2, beta)) + 
+    geom_col(fill = "darkgreen", show.legend = F) +
+    facet_wrap(~topic, scales = "free_y") + # free_y scale so that the beta ticks change in the same increments across plots.
+    coord_flip() +
+    labs(title = "April - June 2020 Topics",
+         x = "Words",
+         y = "Beta")
+  
+  # Labeling human-identified topics using k = 9
+  beta_2020_k9 <- beta_2020_k9 %>% 
+    mutate(
+      topic = as.character(topic),
+      topic = recode(topic,
+                     "1" = "County Health Reports & COVID Testing",
+                     "2" = "Home Life & Pandemic Updates",
+                     "3" = "Trump Administration & Government Response",
+                     "4" = "City-Level Impact & Death Counts",
+                     "5" = "Daily Updates & Economic Impact",
+                     "6" = "Critique on Government Reopening Decisions",
+                     "7" = "Frontline Medical Staff, Risks, and Plans",
+                     "8" = "Global and Economic Impact",
+                     "9" = "COVID Testing & Positivity Rates"))
+  
+  # Re-plot w/ topic titles
+  ggplot(beta_2020_k9, aes(term2, beta)) + 
+    geom_col(fill = "steelblue", show.legend = F) +
+    facet_wrap(~topic, scales = "free_y") + 
+    coord_flip() +
+    labs(title = "April - June 2020 Topics",
+         x = NULL,
+         y = "Beta") + theme_bw()
+  
+  # gamma to find most dominant/prevalent topic during 2020
+  gamma_2020_k16 <- lda2020_k9 %>% 
+    tidy(matrix = "gamma") %>%
+    mutate(
+      topic = recode(topic,
+                     "1" = "County Health Reports & COVID Testing",
+                     "2" = "Home Life & Pandemic Updates",
+                     "3" = "Trump Administration & Government Response",
+                     "4" = "City-Level Impact & Death Counts",
+                     "5" = "Daily Updates & Economic Impact",
+                     "6" = "Critique on Government Reopening Decisions",
+                     "7" = "Frontline Medical Staff, Risks, and Plans",
+                     "8" = "Global and Economic Impact",
+                     "9" = "COVID Testing & Positivity Rates"))
+  
+  dominant_topic_2020 <- gamma_2020_k16 %>%
+    group_by(document) %>%
+    slice_max(gamma, n = 1, with_ties = FALSE) %>%
+    ungroup() # finding the best fit topic per document
+  
+  topic_counts_2020 <- dominant_topic_2020 %>% 
+    count(topic, sort = TRUE) %>% 
+    mutate(topic = reorder(topic, n)) # adding up documents per topic
+  
+  # Bar charts > Pie charts
+  ggplot(topic_counts_2020, aes(x = topic, y = n, fill = topic)) +
+    geom_bar(stat = "identity", width = 1, color = "white", show.legend = F) +
+    geom_text(aes(label = n)) +
+    coord_flip() +
+    labs(
+      title = "The Biggest Themes of April - June 2020",
+      subtitle = "Relating to Covid-19",
+      fill = "Themes",
+      x = NULL,
+      y = "Tweets"
+    ) + theme_bw() +
+    scale_fill_brewer(palette = "YlGnBu")
+
+```
+
+
+**For context**: Early April, the CDC announced new mask-wearing guidelines. Many people complied; current President Trump did not. Florida ended quarantine on April 30th and moved into phases of reopening the public. In early June, the state had entered phase two of reopening, meaning allowing bars, theaters, and other public building spaces to run at 50% capacity. There was no vaccine yet, but development, research, and human clinical trials had been ongoing and fast. 
+
+The most prominent topics that Floridians, likely like most people, talked about during April-June of 2020 are:
+1. **County Health Reports & COVID Testing** - Because the global pandemic is new to most people, and many people across the globe were experiencing severe illness and death counts kept rising, there were so many updates and some many people watching the numbers climb. I remember back in my senior of high school where I was checking covid cases every day. With just one case in your state, it spreads like wildfire---both the virus and news.
+2. **Home Life and Pandemic Updates** - Admidst the reopeing and returning to a more normal life again, it seems many conversations and tweet documents showed people's reliance on official pandemic updates to decide how to move forward. Reopening with no mask mandates in Florida, there was a surge in cases. Keep in mind, again, that there was no vaccine, which definitely led to more patients. The word 'China' may have to do with the origin of the virus or blaming the country. 
+3. **Trump Administration & Government Response** - We were under Trump's presidency during the time these tweets were collected. During this period, the White House held frequent briefings and released evolving public health guidelines. Additionally, during March, Medicaid temporarily expanded telehealth benefits. This provided a wider range of healthcare to the beneficiaries with the need to travel to a healthcare facility.
+
+***More can be found here:*** <https://www.cdc.gov/museum/timeline/covid19.html>
+
+Overall, many of the tweets consisted of reporting official news, health guidelines and also a lot of conversations around these new experiences, such as the entire pandemic and home life. Reopening after quarantine, some people were precautious and others were tired of quarantine and masks.
+
+One topic that I found interesting and nostalgic (but I changed the model since I made a *major* preprocessing error) was something Jadyn and I labeled as *Community Support for Healthcare Workers*. After code revisions and changes in the k value, that topic was never seen or at least obvious again.
+
+### April to June of 2021 - Preparing my data and running an LDA model
+I basically repeat most of the code I did for the 2020 data with the 2021 data, switching out and renaming new objects.
+
+```{r}
+
+ data2021 <- read.csv("data/COVIDTweetsAprilToJune2021.csv")
+  
+  original_2021 <- data2021 %>% 
+    filter(str_detect(place, "Florida|FL")) %>% 
+    select(id, original_text) %>% 
+    mutate(id = row_number())
+  
+  # cleaning 2021 original tweets FROM SCRATCH
+  clean2021 <- original_2021 %>% 
+    mutate(original_text = as.character(original_text)) %>% 
+    mutate(original_text = replace_contraction(original_text)) %>% 
+    mutate(original_text = replace_number(original_text)) %>% 
+    mutate(original_text = str_remove_all(original_text, "https?://.*$")) %>% 
+    mutate(original_text = str_remove_all(original_text, "RT ")) %>% 
+    mutate(original_text = str_remove_all(original_text, "@\\w+")) %>% 
+    mutate(original_text = removePunctuation(original_text)) %>%
+    mutate(original_text = str_remove_all(original_text, "'")) %>% 
+    mutate(original_text = removeNumbers(original_text)) %>% 
+    unnest_tokens(word, original_text) %>% 
+    anti_join(full_stop_words)
+  
+  dictionary_2021 <- original_2021 %>% 
+    select(original_text) %>% 
+    unnest_tokens(word, original_text) %>% 
+    anti_join(full_stop_words) %>%
+    distinct(word) %>% 
+    pull(word)
+  
+  stem2021 <- clean2021 %>% 
+    mutate(word = wordStem(word)) %>% 
+    mutate(
+      word = unlist(lapply(word, stemCompletion, dictionary = dictionary_2021))
+    )
+  
+  words_2021 <- stem2021 %>% 
+    drop_na() %>% 
+    anti_join(full_stop_words) %>% 
+    mutate(word = recode(word,
+                         "viru" = "virus",
+                         "informat" = "information",
+                         "posit" = "positive",
+                         "mani" = "humanity",
+                         "communi" = "community",
+                         "preside" = "president", 
+                         "respons" = "response",
+                         "raise" = "fundraise",
+                         "busin" = "business",
+                         "hospita" = "hospital",
+                         "vaccin" = "vaccine",
+                         "accounc" = "announce",
+                         "countie" = "county",
+                         "populati" = "population",
+                         "emerge" = "emergency",
+                         "announc" = "announce",
+                         "updat" = "update",
+                         "requir" = "require")) %>% 
+    count(id, word)
+  
+  # LDA Modeling
+  dtm2021 <- words_2021 %>% 
+    cast_dtm(id, word, n)
+  
+  lda2021_k10 = LDA(
+    dtm2021,
+    k = 8, 
+    method = "Gibbs",
+    control = list(seed = 10)
+  )
+  
+  glimpse(lda2021_k10)
+  
+  beta_2021_k10 <- lda2021_k10 %>% 
+    tidy(matrix = "beta")
+  
+  beta_2021_k10 <- beta_2021_k10 %>% 
+    arrange(desc(beta)) %>% 
+    group_by(topic) %>%
+    slice_max(beta, n = 8) %>% 
+    mutate(term2 = fct_reorder(term, beta))
+  
+  ggplot(beta_2021_k10, aes(term, beta)) + 
+    geom_col(fill = "darkgreen", show.legend = F) +
+    facet_wrap(~topic, scales = "free_y") + 
+    coord_flip() +
+    labs(
+      title = "April - June 2021 Topics",
+      x = "Words",
+      y = "Beta"
+    )
+  
+  # Labeling human-identified topics using k = 10
+  beta_2021_k10 <- beta_2021_k10 %>% 
+    mutate(
+      topic = as.character(topic),
+      topic = recode(topic,
+                     "1" = "Vaccination Sites & Global Aid",
+                     "2" = "Health Plans & News",
+                     "3" = "Desantis Prohibiting COVID Vaccine Mandates",
+                     "4" = "Variant Severity & Texan Hospital Lawsuit",
+                     "5" = "Information Reports & Updates",
+                     "6" = "Vaccines & COVID Origin Research",
+                     "7" = "Vaccines and Pandemic Situation News",
+                     "8" = "Biden Administration & Health Risks"))
+  
+  # # Re-plot w/ topic titles
+  ggplot(beta_2021_k10, aes(term2, beta)) + 
+    geom_col(fill = "steelblue", show.legend = F) +
+    facet_wrap(~topic, scales = "free_y") + 
+    coord_flip() +
+    labs(
+      title = "April - June 2021 Topics",
+      x = NULL,
+      y = "Beta"
+    ) + theme_bw()
+  
+  # gamma to find most dominant/prevalent topic during 2020
+  gamma_2021_k10 <- lda2021_k10 %>% 
+    tidy(matrix = "gamma") %>% 
+    mutate(
+    topic = recode(topic,
+                     "1" = "Vaccination Sites & Global Aid",
+                     "2" = "Health Plans & News",
+                     "3" = "Desantis Prohibiting COVID Vaccine Mandates",
+                     "4" = "Variant Severity & Texan Hospital Lawsuit",
+                     "5" = "Information Reports & Updates",
+                     "6" = "Vaccines & COVID Origin Research",
+                     "7" = "Vaccines and Pandemic Situation News",
+                     "8" = "Biden Administration & Health Risks"))
+  
+  dominant_topic_2021 <- gamma_2021_k10 %>%
+    group_by(document) %>%
+    slice_max(gamma, n = 1, with_ties = FALSE) %>%
+    ungroup()
+  
+  topic_counts_2021 <- dominant_topic_2021 %>%
+    count(topic, sort = TRUE) %>% 
+    mutate(topic = reorder(topic, n))
+  
+  ggplot(topic_counts_2021, aes(x = topic, y = n, fill = topic)) +
+    geom_bar(stat = "identity", width = 1, color = "white", show.legend = F) +
+    geom_text(aes(label = n)) +
+    coord_flip() +
+    labs(
+      title = "The Biggest Themes of April - June 2021",
+      subtitle = "Relating to Covid-19",
+      fill = "Themes",
+      x = NULL,
+      y = "Tweets"
+    ) + theme_bw() +
+    scale_fill_brewer(palette = "YlGnBu")
+  
+```
+
+
+In contrast to the previous topics found in tweets from mid-2020, the topics of 2021 is dominated by the existence of vaccines. That makes sense. There was no covid vaccine while investigating the tweets from 2020, since the first covid vaccine came out in the December of 2020.
+
+**Some context:** At this time, we were under the Biden administration, which joins COVAX---program aimed at vaccinating people in low and middle income countries against COVID-19. Hence the most prevalent topic in 2021 regarding covid: Vaccination Sites & Global Aid. Vaccines were being distributed more, nationally and internationally. Also, by spring of 2021, about most age groups were able vaccinated, including senior citizens, adults, and adolescents.
+
+There is strong pushback for vaccines in general, but during 2021, a variant like *delta* came to be. It was more contagious and more severe, but a large population of people still refused to wear masks and get vaccinated, fearing the long term complications due to limited testing. Desantis officially prohibited vaccine and mask mandates.
+
+Ultimately, comparing the tweets and their topics with a one year gap highlights *vaccine developments*. In the 2020 tweets, Florida was just starting to reopen. And in 2021, life felt more normal, at least for the U.S. (hence less conversations on the national death reports.) The same cannot be said about lower income countries globally, which relied of other countries' distribution of vaccines. Despite vaccines being a game changer, allowing the reopening of society to function so well, masks were and vaccines still are very controversial. The theme of vaccines heavily dominated several topics in 2021.
