@@ -483,7 +483,7 @@ full_stop_words <- stop_words %>%
          y = "Beta") + theme_bw()
   
   # gamma to find most dominant/prevalent topic during 2020
-  gamma_2020_k16 <- lda2020_k9 %>% 
+  gamma_2020_k9 <- lda2020_k9 %>%
     tidy(matrix = "gamma") %>%
     mutate(
       topic = recode(topic,
@@ -497,7 +497,7 @@ full_stop_words <- stop_words %>%
                      "8" = "Global and Economic Impact",
                      "9" = "COVID Testing & Positivity Rates"))
   
-  dominant_topic_2020 <- gamma_2020_k16 %>%
+  dominant_topic_2020 <- gamma_2020_k9 %>%
     group_by(document) %>%
     slice_max(gamma, n = 1, with_ties = FALSE) %>%
     ungroup() # finding the best fit topic per document
@@ -602,25 +602,25 @@ I basically repeat most of the code I did for the 2020 data with the 2021 data, 
   dtm2021 <- words_2021 %>% 
     cast_dtm(id, word, n)
   
-  lda2021_k10 = LDA(
+  lda2021_k8 = LDA(
     dtm2021,
     k = 8, 
     method = "Gibbs",
     control = list(seed = 10)
   )
   
-  glimpse(lda2021_k10)
+  glimpse(lda2021_k8)
   
-  beta_2021_k10 <- lda2021_k10 %>% 
+  beta_2021_k8 <- lda2021_k8 %>% 
     tidy(matrix = "beta")
   
-  beta_2021_k10 <- beta_2021_k10 %>% 
+  beta_2021_k8 <- beta_2021_k8 %>% 
     arrange(desc(beta)) %>% 
     group_by(topic) %>%
     slice_max(beta, n = 8) %>% 
     mutate(term2 = fct_reorder(term, beta))
   
-  ggplot(beta_2021_k10, aes(term, beta, fill = as.factor(topic))) + 
+  ggplot(beta_2021_k8, aes(term, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free_y") + 
     coord_flip() +
@@ -631,7 +631,7 @@ I basically repeat most of the code I did for the 2020 data with the 2021 data, 
     )
   
   # Labeling human-identified topics using k = 10
-  beta_2021_k10 <- beta_2021_k10 %>% 
+  beta_2021_k8 <- beta_2021_k8 %>% 
     mutate(
       topic = as.character(topic),
       topic = recode(topic,
@@ -645,7 +645,7 @@ I basically repeat most of the code I did for the 2020 data with the 2021 data, 
                      "8" = "Biden Administration & Health Risks"))
   
   # # Re-plot w/ topic titles
-  ggplot(beta_2021_k10, aes(term2, beta, fill = as.factor(topic))) + 
+  ggplot(beta_2021_k8, aes(term2, beta, fill = as.factor(topic))) + 
     geom_col(show.legend = F) +
     facet_wrap(~topic, scales = "free_y") + 
     coord_flip() +
@@ -656,7 +656,7 @@ I basically repeat most of the code I did for the 2020 data with the 2021 data, 
     ) + theme_bw()
   
   # gamma to find most dominant/prevalent topic during 2020
-  gamma_2021_k10 <- lda2021_k10 %>% 
+  gamma_2021_k8 <- lda2021_k8 %>% 
     tidy(matrix = "gamma") %>% 
     mutate(
     topic = recode(topic,
@@ -669,7 +669,7 @@ I basically repeat most of the code I did for the 2020 data with the 2021 data, 
                      "7" = "Vaccines and Pandemic Situation News",
                      "8" = "Biden Administration & Health Risks"))
   
-  dominant_topic_2021 <- gamma_2021_k10 %>%
+  dominant_topic_2021 <- gamma_2021_k8 %>%
     group_by(document) %>%
     slice_max(gamma, n = 1, with_ties = FALSE) %>%
     ungroup()

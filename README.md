@@ -1,62 +1,166 @@
-# LIS4761 Final Project — COVID-19 Twitter Analytics (Group 3)
+# Mining COVID-19 Conversations in Florida
 
-A group project for LIS4761 analyzing COVID-19-related tweets from Florida across two windows — **April–June 2020** and **April–June 2021** — using topic modeling, exploratory/sentiment analysis, regression, and interactive Shiny dashboards.
+**LIS4761 – Data & Text Mining · Final Project (Group 3)**
 
-This repo is the group submission; my individual contribution was the **LDA topic modeling** component, detailed below.
+What were Floridians tweeting about during COVID-19, and how did that change in a year? This repo holds our group's analysis of COVID-19 tweets and Florida county-level case data. My part was the **LDA topic model**, comparing the main discussion themes in Florida tweets from **April–June 2020** and **April–June 2021**.
+
+> **Headline finding:** in spring 2020, the conversation was about case counts, testing, and government response. By spring 2021, vaccines dominated almost every topic — where to get them, global aid, and the fight over vaccine mandates.
+
+---
 
 ## Project Scope
 
-The group pulled Twitter datasets filtered to Florida-origin tweets (plus a county-level Florida COVID-19 case dataset) and split the analysis across a few angles:
+The project looked at the pandemic from two angles: what the public was saying, and what the county-level data showed.
 
-| Component | File(s) | Description |
+**Research questions**
+1. How did the main COVID-19 discussion topics and sentiment shift across different stages of the pandemic?
+2. Which county-level factors best predict the new percent-positive COVID-19 rate in Florida?
+
+**Data**
+| Dataset | Source | Description |
 |---|---|---|
-| **LDA Topic Modeling** (mine) | [CleanerLDA.R](CleanerLDA.R), [LDA-Topic-Modeling.Rmd](LDA-Topic-Modeling.Rmd) / [.html](LDA-Topic-Modeling.html), [LDA.pdf](LDA.pdf) | Unsupervised topic discovery on 2020 vs. 2021 tweets to see how conversation themes shifted year-over-year. |
-| Exploratory & Sentiment Analysis | [Covid 19 Group Final.R](Covid%2019%20Group%20Final.R) | `skimr` overview plus Bing lexicon sentiment scoring and monthly sentiment trends. |
-| Linear Regression | [Covid Linear Regression](Covid%20Linear%20Regression) | Models `NewPercPos` against county-level variables (median age, monitoring status). |
-| Shiny Dashboards | [ShinyApp](ShinyApp) (tweet sentiment explorer), [CovidDataShinyApp](CovidDataShinyApp) / [NewCovidShinyApp](NewCovidShinyApp) (two iterations of a county-level case metrics explorer) | Interactive dashboards for tweet sentiment and county-level case metrics. |
-| Combined Write-up | [data/Group 3.Rmd](data/Group%203.Rmd) / [.html](data/Group-3.html), [Covid-19 Analytics Project Group 3.pptx](Covid-19%20Analytics%20Project%20Group%203.pptx) | Full group report and presentation. |
+| COVID-19 tweets | Kaggle | Over 400,000 tweets across three periods (Apr–Jun 2020, Aug–Sep 2020, Apr–Jun 2021), with original text, hashtags, location, and engagement metadata |
+| Florida COVID-19 by county | U.S. COVID-19 data library (Oct 30, 2020 snapshot) | County-level testing, positivity, deaths, median age, and monitoring counts |
 
-**Data** (in [data/](data/)): raw tweet CSVs for Apr–Jun 2020, Aug–Sep 2020, and Apr–Jun 2021, plus a partial Florida county-level COVID-19 case CSV.
+**Methods across the group**
+| Component | Method |
+|---|---|
+| **Topic modeling (my contribution)** | **LDA on Florida tweets, comparing 2020 with 2021** |
+| Exploratory analysis | Interactive R Shiny app over the county data |
+| Sentiment analysis | Bing-lexicon positive/negative classification of tweets, plus monthly trend charts |
+| Regression | Linear model of `NewPercPos` on `MedianAge`, `EverMon`, and `MonNow` |
 
-> Note: of the four analytical components above, the LDA analysis is the one I'd stand behind as rigorous and well-documented — see below. The EDA/sentiment, regression, and dashboard pieces were built quickly by other group members and are included here for completeness, not as a reflection of my own work.
+**Team:** Jadyn Hollar, Veronica Vaccaro, Kingsley John, Lyndsey Guidash, Kaylen Ton
 
-## My Contribution: LDA Topic Modeling
+---
 
-**Goal:** uncover what Floridians were actually tweeting about regarding COVID-19, and compare how those themes shifted between April–June 2020 (early pandemic/reopening) and April–June 2021 (vaccine rollout).
+## LDA Topic Modeling
 
-### Approach
+Main file: [`LDA-Topic-Modeling.Rmd`](LDA-Topic-Modeling.Rmd) · rendered report: [`LDA-Topic-Modeling.html`](LDA-Topic-Modeling.html) · slide deck: [`LDA.pdf`](LDA.pdf)
 
-1. **Cleaning** — stripped URLs, mentions, RT tags, punctuation, and numbers from raw tweet text; expanded contractions.
-2. **Tokenizing & stop words** — `unnest_tokens()` to split into words, `anti_join()` against `tidytext`'s stop word list plus a custom list (e.g. `covid`, `coronavirus`, `rt`, `fauci`) that would otherwise dominate every topic.
-3. **Stemming + stem completion** — `wordStem()` to reduce words to roots, then `stemCompletion()` against a per-year dictionary of distinct words to turn stems back into readable words. Some completions didn't resolve cleanly and were manually corrected with `mutate()` + `recode()`.
-4. **Document-term matrix** — counted word frequency per tweet (`count(id, word)`) and cast to a DTM (`cast_dtm(id, word, n)`).
-5. **LDA modeling** — fit with the `topicmodels` package, trying several values of *k* and keeping the model whose topics were most humanly interpretable.
-6. **Interpretation** — used `tidy(matrix = "beta")` to pull top terms per topic (and label them by hand), and `tidy(matrix = "gamma")` to assign each tweet to its dominant topic, then counted tweet volume per topic to find the biggest themes each year.
+### Goal
+Compare the topics and themes in COVID-19 tweets from Florida across two windows exactly one year apart: **April–June 2020** (reopening after lockdown, no vaccine yet) and **April–June 2021** (vaccines widely available).
 
-### Findings
+### Pipeline
 
-**April–June 2020** was dominated by:
-- County Health Reports & COVID Testing
-- Home Life & Pandemic Updates
-- Trump Administration & Government Response
+```
+Raw tweets ─► Filter to Florida ─► Clean text ─► Tokenize + remove stop words
+          ─► Stem + stem-complete ─► Word counts per tweet ─► Document-term matrix
+          ─► LDA (Gibbs) ─► β: label topics  /  γ: dominant topic per tweet
+```
 
-This tracks with the context at the time: Florida had just ended quarantine (April 30, 2020) and was moving through reopening phases, there was no vaccine yet, and daily case/death counts were the main source of news.
+**1. Filtering.** Kept tweets whose `place` matched Florida, and reassigned each a new sequential ID — the original IDs had been stored in scientific notation, which made distinct tweets look like duplicates.
 
-**April–June 2021** was dominated by vaccine-related themes:
-- Vaccination Sites & Global Aid
-- Health Plans & News
-- DeSantis Prohibiting COVID Vaccine Mandates
+**2. Cleaning, written from scratch** with `qdap`, `tm`, and `stringr`: expanded contractions, wrote numbers out as words, and removed URLs, `RT` markers, @mentions, punctuation, and leftover numbers.
 
-This reflects the vaccine rollout (first vaccines arrived Dec 2020), the Biden administration joining COVAX for global vaccine distribution, and the growing political/social pushback around vaccine and mask mandates (including the Delta variant emerging as a concern).
+| | Example |
+|---|---|
+| Original | `@ayemojubar We have lost 3 healthcare workers: Dr Emeka, Dr(PT) Otegbeye and Dr Aminu...yet some still think COVID-… https://t.co/u04st9avXw` |
+| Cleaned | `We have lost three healthcare workers Dr Emeka DrPT Otegbeye and Dr Aminuyet some still think COVID…` |
 
-**Takeaway:** the one-year gap shows a clear pivot from *"how bad is it and what do we do now"* (testing, reporting, early reopening) to *"vaccines — getting them, mandating them, or resisting them"* as the defining conversation of the pandemic.
+**3. Tokenizing and stop words.** Tokenized with `tidytext::unnest_tokens()` and removed the standard stop words plus a **custom stop-word list** — words that appear in nearly every tweet (`covid19`, `coronavirus`, `florida`), cleaning artifacts (`amp`, `http`, `rt`), and terms that added no value when naming topics.
 
-Full topic breakdowns, beta/gamma charts, and slide-by-slide commentary are in [LDA.pdf](LDA.pdf).
+**4. Stemming and stem completion.** `SnowballC::wordStem()` reduced words to their roots; `tm::stemCompletion()` turned each root back into a readable word using a dictionary built from that period's own tweets. Where stem completion resolved to the wrong word (`viru` → `virus`, `vaccin` → `vaccine`), the fix was applied by hand with `recode()`.
 
-### Libraries Used
+**5. Modeling.** Counted words per tweet, built a document-term matrix with `cast_dtm()`, and fit `topicmodels::LDA()` with Gibbs sampling and a fixed seed for reproducibility.
 
-`tidyverse`, `tidytext`, `qdap`, `tm`, `SnowballC`, `topicmodels`, `ggplot2`
+| Period | k | Seed |
+|---|---|---|
+| Apr–Jun 2020 | 9 | 67 |
+| Apr–Jun 2021 | 8 | 10 |
 
-## Running It
+Several values of **k** were tried; the final value for each period is the one that produced the most clearly interpretable topics.
 
-Open [LIS4761 Final Project.Rproj](LIS4761%20Final%20Project.Rproj) in RStudio so relative paths resolve correctly, then run [CleanerLDA.R](CleanerLDA.R) (expects the CSVs in [data/](data/)) or knit [LDA-Topic-Modeling.Rmd](LDA-Topic-Modeling.Rmd) for the full write-up with charts.
+**6. Interpretation**
+- **β (per-topic word probabilities):** plotted the top 8 words in each topic and named each topic by hand.
+- **γ (per-document topic probabilities):** assigned each tweet to its highest-γ topic and counted tweets per topic to find the main themes of each period.
+
+### Results
+
+#### April–June 2020: case counts, testing, and government response
+
+<p align="center"><img src="images/lda-2020-topics.png" width="720" alt="Top words per topic, April–June 2020"></p>
+<p align="center"><img src="images/lda-2020-theme-counts.png" width="620" alt="Tweets per dominant topic, April–June 2020"></p>
+
+| # | Topic | Tweets |
+|---|---|---|
+| 1 | County Health Reports & COVID Testing | 343 |
+| 2 | Home Life & Pandemic Updates | 268 |
+| 3 | Trump Administration & Government Response | 221 |
+| 4 | Daily Updates & Economic Impact | 202 |
+| 5 | City-Level Impact & Death Counts | 198 |
+| 6 | Frontline Medical Staff, Risks, and Plans | 156 |
+| 7 | Critique on Government Reopening Decisions | 139 |
+| 8 | COVID Testing & Positivity Rates | 137 |
+| 9 | Global and Economic Impact | 121 |
+
+*Context:* Florida ended its stay-at-home order on April 30 and entered Phase 2 of reopening in June. No vaccine existed yet. Tweets were mostly official updates and daily case/death numbers, along with reactions to federal and state decisions.
+
+#### April–June 2021: vaccines everywhere
+
+<p align="center"><img src="images/lda-2021-topics.png" width="720" alt="Top words per topic, April–June 2021"></p>
+<p align="center"><img src="images/lda-2021-theme-counts.png" width="620" alt="Tweets per dominant topic, April–June 2021"></p>
+
+| # | Topic | Tweets |
+|---|---|---|
+| 1 | Vaccination Sites & Global Aid | 299 |
+| 2 | Health Plans & News | 230 |
+| 3 | DeSantis Prohibiting COVID Vaccine Mandates | 191 |
+| 4 | Variant Severity & Texan Hospital Lawsuit | 171 |
+| 5 | Information Reports & Updates | 150 |
+| 6 | Vaccines & COVID Origin Research | 142 |
+| 7 | Vaccines and Pandemic Situation News | 117 |
+| 8 | Biden Administration & Health Risks | 99 |
+
+*Context:* The first vaccines arrived in December 2020. By spring 2021, most age groups were eligible, the U.S. had joined COVAX to send vaccines abroad, and Governor DeSantis had prohibited vaccine and mask mandates as the Delta variant spread.
+
+> The four charts above are exported directly from [`LDA.pdf`](LDA.pdf) into `images/`.
+
+### Takeaways
+- **The conversation moved from reporting to debating.** In 2020, tweets tracked numbers: county reports, testing, death counts. In 2021, they argued policy: mandates, variants, lawsuits.
+- **Vaccines were the defining change.** Vaccines appear in at least four of the eight 2021 topics; in 2020, "vaccinated" shows up only as a minor word in one topic.
+- **The political focus shifted with the administration.** Trump-era briefings and the Medicaid telehealth expansion in 2020 gave way to Biden-era federal policy and state-level mandate fights in 2021.
+
+### Limitations
+- **Topic labels are my own judgment.** k was chosen, and topics named, based on what was most interpretable — not an optimized coherence or perplexity score.
+- **The location filter is loose.** Matching `"Florida|FL"` in the `place` field can also catch other places whose names contain "FL".
+- **Topics share vocabulary.** With a modest number of short documents per period, words like `virus`, `death`, and `test` recur across topics, so the boundaries between them are soft.
+- **Hand-fixing stems is manual.** The `recode()` fixes improve readability but would need updating for new data.
+
+---
+
+## Repository Structure
+
+```
+├── LDA-Topic-Modeling.Rmd        # ⭐ LDA analysis (final version, mine)
+├── LDA-Topic-Modeling.html       # ⭐ Rendered LDA report
+├── LDA.pdf                       # ⭐ LDA slide deck
+├── CleanerLDA.R                  # Standalone LDA script
+├── Covid 19 Group Final.R        # Group EDA / sentiment script
+├── Covid Linear Regression       # Regression script
+├── ShinyApp                      # Shiny app: tweet sentiment explorer
+├── NewCovidShinyApp              # Shiny app: FL county explorer (latest)
+├── CovidDataShinyApp             # Shiny app: FL county explorer (earlier iteration)
+├── Covid-19 Analytics Project Group 3.pptx   # Final presentation
+├── data/
+│   ├── COVIDTweetsAprilToJune2020.csv
+│   ├── COVIDTweetsAugustToSeptember2020.csv
+│   ├── COVIDTweetsAprilToJune2021.csv
+│   ├── Florida_COVID19_10302020_ByCounty_CSV_Partial.csv
+│   ├── Group 3.Rmd               # Combined group notebook
+│   └── Group-3.html
+└── images/                       # Chart PNGs exported from LDA.pdf, used in this README
+```
+
+## Running the LDA
+
+1. Clone the repo and open `LIS4761 Final Project.Rproj` in RStudio.
+2. Install the packages:
+   ```r
+   install.packages(c("tidyverse", "tidytext", "topicmodels", "qdap",
+                      "tm", "SnowballC", "RColorBrewer"))
+   ```
+   > `qdap` needs Java (`rJava`). If it won't install, see the [qdap install notes](https://github.com/trinker/qdap#installation).
+3. Knit `LDA-Topic-Modeling.Rmd`. It reads the tweet CSVs from `data/`. Stem completion is slow, so expect it to take a few minutes.
+
+**Built with:** R · tidyverse · tidytext · topicmodels · tm · qdap · SnowballC · ggplot2
